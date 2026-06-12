@@ -1,0 +1,23 @@
+BraveBot Sim
+Copyright 2026 Justin Suo
+
+This product includes software developed for the BraveBot inspection-robot
+simulation. Licensed under the Apache License, Version 2.0.
+
+------------------------------------------------------------------------------
+Third-party assets
+------------------------------------------------------------------------------
+LimX Dynamics TRON 1 (WF_TRON1A) link meshes
+  Files:   description/meshes/tron1/*.stl
+  Source:  https://github.com/limxdynamics/robot-description
+  Copyright: LimX Dynamics
+  License: Apache License, Version 2.0
+
+  These link meshes are reproduced unmodified and used as the locomotion-base
+  geometry of the BraveBot concept robot. The Apache-2.0 license permits use,
+  modification and distribution, including commercially, provided this
+  attribution and license notice are retained.
+
+All BraveBot modification geometry (sensor mast, sensor head, four-sensor stack,
+edge-AI core, hot-swap battery, torso, rails, antennas, e-stop and payload
+adapter) is original work generated procedurally by bravebot_sim/meshgen.py.

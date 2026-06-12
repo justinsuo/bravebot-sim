@@ -1,0 +1,741 @@
+<?xml version="1.0" ?>
+<robot name="bravebot">
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/tron1/base_Link.stl"/>
+      </geometry>
+      <material name="base_link_mat">
+        <color rgba="0.8 0.82 0.86 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/tron1/base_Link.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="9.0000"/>
+      <inertia ixx="0.17422" iyy="0.14708" izz="0.15074" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <link name="abadL_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/tron1/abad_L_Link.stl"/>
+      </geometry>
+      <material name="abadL_link_mat">
+        <color rgba="0.6 0.64 0.7 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/tron1/abad_L_Link.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.4000"/>
+      <inertia ixx="0.00310" iyy="0.00354" izz="0.00361" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="abad_L" type="revolute">
+    <parent link="base_link"/>
+    <child link="abadL_link"/>
+    <origin xyz="0.05556 0.105 -0.2602" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.5" upper="0.5" effort="60" velocity="15"/>
+  </joint>
+  <link name="hipL_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/tron1/hip_L_Link.stl"/>
+      </geometry>
+      <material name="hipL_link_mat">
+        <color rgba="0.6 0.64 0.7 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/tron1/hip_L_Link.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.6000"/>
+      <inertia ixx="0.01698" iyy="0.02266" izz="0.00922" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="hip_L" type="revolute">
+    <parent link="abadL_link"/>
+    <child link="hipL_link"/>
+    <origin xyz="-0.077 0.0205 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.2" upper="1.2" effort="60" velocity="15"/>
+  </joint>
+  <link name="kneeL_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/tron1/knee_L_Link.stl"/>
+      </geometry>
+      <material name="kneeL_link_mat">
+        <color rgba="0.6 0.64 0.7 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/tron1/knee_L_Link.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.2000"/>
+      <inertia ixx="0.01278" iyy="0.01801" izz="0.00596" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="knee_L" type="revolute">
+    <parent link="hipL_link"/>
+    <child link="kneeL_link"/>
+    <origin xyz="-0.15 -0.0205 -0.25981" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-2.2" upper="0.0" effort="60" velocity="15"/>
+  </joint>
+  <link name="wheelL_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/tron1/wheel_L_Link.stl"/>
+      </geometry>
+      <material name="wheelL_link_mat">
+        <color rgba="0.25 0.27 0.30 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/tron1/wheel_L_Link.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.1000"/>
+      <inertia ixx="0.00640" iyy="0.01234" izz="0.00639" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="wheel_L" type="continuous">
+    <parent link="kneeL_link"/>
+    <child link="wheelL_link"/>
+    <origin xyz="0.15 0.0435 -0.25981" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+  <link name="abadR_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/tron1/abad_R_Link.stl"/>
+      </geometry>
+      <material name="abadR_link_mat">
+        <color rgba="0.6 0.64 0.7 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/tron1/abad_R_Link.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.4000"/>
+      <inertia ixx="0.00310" iyy="0.00354" izz="0.00361" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="abad_R" type="revolute">
+    <parent link="base_link"/>
+    <child link="abadR_link"/>
+    <origin xyz="0.05556 -0.105 -0.2602" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.5" upper="0.5" effort="60" velocity="15"/>
+  </joint>
+  <link name="hipR_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/tron1/hip_R_Link.stl"/>
+      </geometry>
+      <material name="hipR_link_mat">
+        <color rgba="0.6 0.64 0.7 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/tron1/hip_R_Link.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.6000"/>
+      <inertia ixx="0.01699" iyy="0.02267" izz="0.00922" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="hip_R" type="revolute">
+    <parent link="abadR_link"/>
+    <child link="hipR_link"/>
+    <origin xyz="-0.077 -0.0205 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.2" upper="1.2" effort="60" velocity="15"/>
+  </joint>
+  <link name="kneeR_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/tron1/knee_R_Link.stl"/>
+      </geometry>
+      <material name="kneeR_link_mat">
+        <color rgba="0.6 0.64 0.7 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/tron1/knee_R_Link.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.2000"/>
+      <inertia ixx="0.01278" iyy="0.01801" izz="0.00596" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="knee_R" type="revolute">
+    <parent link="hipR_link"/>
+    <child link="kneeR_link"/>
+    <origin xyz="-0.15 0.0205 -0.25981" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-2.2" upper="0.0" effort="60" velocity="15"/>
+  </joint>
+  <link name="wheelR_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/tron1/wheel_R_Link.stl"/>
+      </geometry>
+      <material name="wheelR_link_mat">
+        <color rgba="0.25 0.27 0.30 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/tron1/wheel_R_Link.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.1000"/>
+      <inertia ixx="0.00640" iyy="0.01234" izz="0.00639" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="wheel_R" type="continuous">
+    <parent link="kneeR_link"/>
+    <child link="wheelR_link"/>
+    <origin xyz="0.15 -0.0435 -0.25981" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+  </joint>
+  <link name="payload_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/payload.stl"/>
+      </geometry>
+      <material name="payload_link_mat">
+        <color rgba="0.86 0.88 0.92 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/payload.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="2.2000"/>
+      <inertia ixx="0.02553" iyy="0.01720" izz="0.04133" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="payload_mount" type="fixed">
+    <parent link="base_link"/>
+    <child link="payload_link"/>
+    <origin xyz="0.02 0 0.045" rpy="0 0 0"/>
+  </joint>
+  <link name="torso_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/torso.stl"/>
+      </geometry>
+      <material name="torso_link_mat">
+        <color rgba="0.86 0.88 0.92 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/torso.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="4.0000"/>
+      <inertia ixx="0.06265" iyy="0.05714" izz="0.06275" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="torso_mount" type="fixed">
+    <parent link="base_link"/>
+    <child link="torso_link"/>
+    <origin xyz="0.02 0 0.215" rpy="0 0 0"/>
+  </joint>
+  <link name="railL_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/railL.stl"/>
+      </geometry>
+      <material name="railL_link_mat">
+        <color rgba="0.86 0.88 0.92 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/railL.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.3000"/>
+      <inertia ixx="0.00369" iyy="0.00382" izz="0.00022" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="railL_mount" type="fixed">
+    <parent link="base_link"/>
+    <child link="railL_link"/>
+    <origin xyz="0.03 0.176 -0.1" rpy="0 0 0"/>
+  </joint>
+  <link name="railR_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/railR.stl"/>
+      </geometry>
+      <material name="railR_link_mat">
+        <color rgba="0.86 0.88 0.92 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/railR.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.3000"/>
+      <inertia ixx="0.00369" iyy="0.00382" izz="0.00022" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="railR_mount" type="fixed">
+    <parent link="base_link"/>
+    <child link="railR_link"/>
+    <origin xyz="0.03 -0.176 -0.1" rpy="0 0 0"/>
+  </joint>
+  <link name="head_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/head.stl"/>
+      </geometry>
+      <material name="head_link_mat">
+        <color rgba="0.86 0.88 0.92 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/head.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.6000"/>
+      <inertia ixx="0.00456" iyy="0.00378" izz="0.00578" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="head_mount" type="fixed">
+    <parent link="base_link"/>
+    <child link="head_link"/>
+    <origin xyz="0.02 0 0.57" rpy="0 0 0"/>
+  </joint>
+  <link name="mast_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/mast.stl"/>
+      </geometry>
+      <material name="mast_link_mat">
+        <color rgba="0.86 0.88 0.92 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/mast.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.7000"/>
+      <inertia ixx="0.00261" iyy="0.00261" izz="0.00136" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="mast_mount" type="fixed">
+    <parent link="base_link"/>
+    <child link="mast_link"/>
+    <origin xyz="0.02 0 0.43" rpy="0 0 0"/>
+  </joint>
+  <link name="battery_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/battery.stl"/>
+      </geometry>
+      <material name="battery_link_mat">
+        <color rgba="0.95 0.55 0.18 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/battery.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="2.6000"/>
+      <inertia ixx="0.01810" iyy="0.01195" izz="0.01882" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="battery_mount" type="fixed">
+    <parent link="base_link"/>
+    <child link="battery_link"/>
+    <origin xyz="0.02 0 0.12" rpy="0 0 0"/>
+  </joint>
+  <link name="edgeai_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/edgeai.stl"/>
+      </geometry>
+      <material name="edgeai_link_mat">
+        <color rgba="0.34 0.38 0.46 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/edgeai.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.9000"/>
+      <inertia ixx="0.00427" iyy="0.00324" izz="0.00497" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="edgeai_mount" type="fixed">
+    <parent link="base_link"/>
+    <child link="edgeai_link"/>
+    <origin xyz="-0.03 0 0.22" rpy="0 0 0"/>
+  </joint>
+  <link name="display_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/display.stl"/>
+      </geometry>
+      <material name="display_link_mat">
+        <color rgba="0.34 0.38 0.46 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/display.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.5000"/>
+      <inertia ixx="0.00277" iyy="0.00101" izz="0.00191" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="display_mount" type="fixed">
+    <parent link="base_link"/>
+    <child link="display_link"/>
+    <origin xyz="0.165 0 0.215" rpy="0 0 0"/>
+  </joint>
+  <link name="rear_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/rear.stl"/>
+      </geometry>
+      <material name="rear_link_mat">
+        <color rgba="0.86 0.88 0.92 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/rear.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.5000"/>
+      <inertia ixx="0.00368" iyy="0.00191" izz="0.00226" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="rear_mount" type="fixed">
+    <parent link="base_link"/>
+    <child link="rear_link"/>
+    <origin xyz="-0.12 0 0.215" rpy="0 0 0"/>
+  </joint>
+  <link name="acoustic_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/acoustic.stl"/>
+      </geometry>
+      <material name="acoustic_link_mat">
+        <color rgba="0.36 0.85 1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/acoustic.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.4000"/>
+      <inertia ixx="0.00084" iyy="0.00045" izz="0.00045" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="acoustic_mount" type="fixed">
+    <parent link="base_link"/>
+    <child link="acoustic_link"/>
+    <origin xyz="0.14 0.075 0.58" rpy="0 0 0"/>
+  </joint>
+  <link name="thermal_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/thermal.stl"/>
+      </geometry>
+      <material name="thermal_link_mat">
+        <color rgba="1 0.55 0.30 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/thermal.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.3000"/>
+      <inertia ixx="0.00025" iyy="0.00038" izz="0.00038" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="thermal_mount" type="fixed">
+    <parent link="base_link"/>
+    <child link="thermal_link"/>
+    <origin xyz="0.145 0 0.6" rpy="0 0 0"/>
+  </joint>
+  <link name="hdcam_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/hdcam.stl"/>
+      </geometry>
+      <material name="hdcam_link_mat">
+        <color rgba="1 0.85 0.35 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/hdcam.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.3000"/>
+      <inertia ixx="0.00039" iyy="0.00045" izz="0.00045" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="hdcam_mount" type="fixed">
+    <parent link="base_link"/>
+    <child link="hdcam_link"/>
+    <origin xyz="0.145 -0.075 0.58" rpy="0 0 0"/>
+  </joint>
+  <link name="gas_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/gas.stl"/>
+      </geometry>
+      <material name="gas_link_mat">
+        <color rgba="0.55 0.95 0.55 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/gas.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.3000"/>
+      <inertia ixx="0.00023" iyy="0.00022" izz="0.00030" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="gas_mount" type="fixed">
+    <parent link="base_link"/>
+    <child link="gas_link"/>
+    <origin xyz="0.14 0 0.535" rpy="0 0 0"/>
+  </joint>
+  <link name="nav_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/nav.stl"/>
+      </geometry>
+      <material name="nav_link_mat">
+        <color rgba="0.70 0.55 1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/nav.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.4000"/>
+      <inertia ixx="0.00119" iyy="0.00054" izz="0.00105" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="nav_mount" type="fixed">
+    <parent link="base_link"/>
+    <child link="nav_link"/>
+    <origin xyz="0.145 0 0.48" rpy="0 0 0"/>
+  </joint>
+  <link name="antennaL_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/antennaL.stl"/>
+      </geometry>
+      <material name="antennaL_link_mat">
+        <color rgba="0.55 0.58 0.64 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/antennaL.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.0500"/>
+      <inertia ixx="0.00009" iyy="0.00009" izz="0.00001" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="antennaL_mount" type="fixed">
+    <parent link="base_link"/>
+    <child link="antennaL_link"/>
+    <origin xyz="0 0.07 0.71" rpy="0 0 0"/>
+  </joint>
+  <link name="antennaR_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/antennaR.stl"/>
+      </geometry>
+      <material name="antennaR_link_mat">
+        <color rgba="0.55 0.58 0.64 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/antennaR.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.0500"/>
+      <inertia ixx="0.00009" iyy="0.00009" izz="0.00001" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="antennaR_mount" type="fixed">
+    <parent link="base_link"/>
+    <child link="antennaR_link"/>
+    <origin xyz="0 -0.07 0.71" rpy="0 0 0"/>
+  </joint>
+  <link name="estop_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/estop.stl"/>
+      </geometry>
+      <material name="estop_link_mat">
+        <color rgba="0.90 0.25 0.20 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="../meshes/bravebot/estop.stl"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.1000"/>
+      <inertia ixx="0.00006" iyy="0.00006" izz="0.00008" ixy="0" ixz="0" iyz="0"/>
+    </inertial>
+  </link>
+  <joint name="estop_mount" type="fixed">
+    <parent link="base_link"/>
+    <child link="estop_link"/>
+    <origin xyz="-0.1 0.11 0.31" rpy="0 0 0"/>
+  </joint>
+</robot>

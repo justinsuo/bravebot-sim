@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+renders/_*.png
+renders/patrol/
+.DS_Store

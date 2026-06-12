@@ -1,0 +1,19 @@
+TRON 1 (WF_TRON1A) link meshes
+==============================
+
+Files: base_Link.stl, abad_L_Link.stl, abad_R_Link.stl, hip_L_Link.stl,
+hip_R_Link.stl, knee_L_Link.stl, knee_R_Link.stl, wheel_L_Link.stl,
+wheel_R_Link.stl
+
+Source:    https://github.com/limxdynamics/robot-description
+Copyright: LimX Dynamics
+License:   Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
+
+These link meshes are used as the visual geometry of the BraveBot concept
+robot. They are reproduced unmodified. The Apache-2.0 license permits use,
+modification and distribution, including commercially, provided this
+attribution and license notice are retained.
+
+The surrounding 3D scene, the assembly into an exploded view, and the
+BraveBot modifications (sensor mast, head and protective rails) are
+original work and are not part of the LimX Dynamics distribution.

@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bravebot-sim"
+version = "0.1.0"
+description = "3D model and MuJoCo simulation library for the BraveBot wheel-legged inspection robot"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Justin Suo" }]
+keywords = ["robotics", "mujoco", "simulation", "tron1", "limx", "inspection-robot"]
+dependencies = [
+    "mujoco>=3.9",
+    "numpy>=1.26",
+    "trimesh>=4.0",
+    "imageio>=2.30",
+]
+
+[project.urls]
+"Product site" = "https://github.com/justinsuo/bravebot-website"
+
+[tool.setuptools]
+packages = ["bravebot_sim"]

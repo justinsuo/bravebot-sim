@@ -1,0 +1,551 @@
+{
+  "robot": "BraveBot",
+  "base_platform": "Modified LimX Dynamics TRON 1 (WF_TRON1A) architecture",
+  "frame": "URDF-local: +x forward, +y left, +z up; origin at TRON 1 base link",
+  "specs": {
+    "robot_type": "Wheel-legged autonomous inspection robot",
+    "base_platform": "Modified LimX Dynamics TRON 1 (WF_TRON1A) architecture",
+    "chassis_footprint": "~9 in x 11 in",
+    "chassis_weight_kg": "21.8 (48 lb body)",
+    "sensor_payload_kg": "15.0 (33 lb stack, config-dependent)",
+    "mobility": "Wheel-legged, stair / slope capable",
+    "slope_capability": "up to 30 deg",
+    "step_capability": "up to ~10 in (estimated)",
+    "ruggedness": "IP66 (target)",
+    "runtime": "2-4 h per charge (estimated)",
+    "battery": "Hot-swappable, ~10 s swap",
+    "sensor_stack": "Acoustic / thermal / gas / visual",
+    "ai": "Edge-resident multimodal AI / local reasoning",
+    "integrations": "OPC UA / MQTT / REST / BMS / DCIM / CMMS",
+    "wheel_radius_m": "0.1297",
+    "wheel_separation_m": "0.2970",
+    "max_speed_mps": "3.0 (wheeled mode)"
+  },
+  "experts": [
+    "Acoustic expert",
+    "Thermal expert",
+    "Gas / safety expert",
+    "Visual inspection expert",
+    "Maintenance / work-order expert"
+  ],
+  "tron1_links": {
+    "base": {
+      "pos_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mesh": "tron1/base_Link.stl"
+    },
+    "abadL": {
+      "pos_m": [
+        0.05556,
+        0.105,
+        -0.2602
+      ],
+      "mesh": "tron1/abad_L_Link.stl"
+    },
+    "abadR": {
+      "pos_m": [
+        0.05556,
+        -0.105,
+        -0.2602
+      ],
+      "mesh": "tron1/abad_R_Link.stl"
+    },
+    "hipL": {
+      "pos_m": [
+        -0.02144,
+        0.1255,
+        -0.2602
+      ],
+      "mesh": "tron1/hip_L_Link.stl"
+    },
+    "hipR": {
+      "pos_m": [
+        -0.02144,
+        -0.1255,
+        -0.2602
+      ],
+      "mesh": "tron1/hip_R_Link.stl"
+    },
+    "kneeL": {
+      "pos_m": [
+        -0.17144,
+        0.105,
+        -0.52001
+      ],
+      "mesh": "tron1/knee_L_Link.stl"
+    },
+    "kneeR": {
+      "pos_m": [
+        -0.17144,
+        -0.105,
+        -0.52001
+      ],
+      "mesh": "tron1/knee_R_Link.stl"
+    },
+    "wheelL": {
+      "pos_m": [
+        -0.02144,
+        0.1485,
+        -0.77982
+      ],
+      "mesh": "tron1/wheel_L_Link.stl"
+    },
+    "wheelR": {
+      "pos_m": [
+        -0.02144,
+        -0.1485,
+        -0.77982
+      ],
+      "mesh": "tron1/wheel_R_Link.stl"
+    }
+  },
+  "leg_joints": [
+    {
+      "name": "abad_L",
+      "parent": "base",
+      "child": "abadL",
+      "type": "revolute",
+      "origin_m": [
+        0.05556,
+        0.105,
+        -0.2602
+      ],
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "range_rad": [
+        -0.5,
+        0.5
+      ]
+    },
+    {
+      "name": "hip_L",
+      "parent": "abadL",
+      "child": "hipL",
+      "type": "revolute",
+      "origin_m": [
+        -0.077,
+        0.020500000000000004,
+        0.0
+      ],
+      "axis": [
+        0,
+        1,
+        0
+      ],
+      "range_rad": [
+        -1.2,
+        1.2
+      ]
+    },
+    {
+      "name": "knee_L",
+      "parent": "hipL",
+      "child": "kneeL",
+      "type": "revolute",
+      "origin_m": [
+        -0.15000000000000002,
+        -0.020500000000000004,
+        -0.25981
+      ],
+      "axis": [
+        0,
+        1,
+        0
+      ],
+      "range_rad": [
+        -2.2,
+        0.0
+      ]
+    },
+    {
+      "name": "wheel_L",
+      "parent": "kneeL",
+      "child": "wheelL",
+      "type": "continuous",
+      "origin_m": [
+        0.15000000000000002,
+        0.0435,
+        -0.25981
+      ],
+      "axis": [
+        0,
+        1,
+        0
+      ],
+      "range_rad": null
+    },
+    {
+      "name": "abad_R",
+      "parent": "base",
+      "child": "abadR",
+      "type": "revolute",
+      "origin_m": [
+        0.05556,
+        -0.105,
+        -0.2602
+      ],
+      "axis": [
+        1,
+        0,
+        0
+      ],
+      "range_rad": [
+        -0.5,
+        0.5
+      ]
+    },
+    {
+      "name": "hip_R",
+      "parent": "abadR",
+      "child": "hipR",
+      "type": "revolute",
+      "origin_m": [
+        -0.077,
+        -0.020500000000000004,
+        0.0
+      ],
+      "axis": [
+        0,
+        1,
+        0
+      ],
+      "range_rad": [
+        -1.2,
+        1.2
+      ]
+    },
+    {
+      "name": "knee_R",
+      "parent": "hipR",
+      "child": "kneeR",
+      "type": "revolute",
+      "origin_m": [
+        -0.15000000000000002,
+        0.020500000000000004,
+        -0.25981
+      ],
+      "axis": [
+        0,
+        1,
+        0
+      ],
+      "range_rad": [
+        -2.2,
+        0.0
+      ]
+    },
+    {
+      "name": "wheel_R",
+      "parent": "kneeR",
+      "child": "wheelR",
+      "type": "continuous",
+      "origin_m": [
+        0.15000000000000002,
+        -0.0435,
+        -0.25981
+      ],
+      "axis": [
+        0,
+        1,
+        0
+      ],
+      "range_rad": null
+    }
+  ],
+  "components": [
+    {
+      "id": "payload",
+      "name": "Payload adapter frame",
+      "group": "structural",
+      "mount_m": [
+        0.02,
+        0.0,
+        0.045
+      ],
+      "mesh": "bravebot/payload.stl",
+      "summary": "Custom mounting layer bolted on top of the TRON 1 base.",
+      "sensor": null
+    },
+    {
+      "id": "torso",
+      "name": "Rugged inspection torso",
+      "group": "structural",
+      "mount_m": [
+        0.02,
+        0.0,
+        0.215
+      ],
+      "mesh": "bravebot/torso.stl",
+      "summary": "Sealed IP66 enclosure housing inspection electronics and edge compute.",
+      "sensor": null
+    },
+    {
+      "id": "railL",
+      "name": "Protective rail (left)",
+      "group": "structural",
+      "mount_m": [
+        0.03,
+        0.176,
+        -0.1
+      ],
+      "mesh": "bravebot/railL.stl",
+      "summary": "Impact rail cage and field handling point.",
+      "sensor": null
+    },
+    {
+      "id": "railR",
+      "name": "Protective rail (right)",
+      "group": "structural",
+      "mount_m": [
+        0.03,
+        -0.176,
+        -0.1
+      ],
+      "mesh": "bravebot/railR.stl",
+      "summary": "Impact rail cage and field handling point.",
+      "sensor": null
+    },
+    {
+      "id": "head",
+      "name": "Sensor head housing",
+      "group": "structural",
+      "mount_m": [
+        0.02,
+        0.0,
+        0.57
+      ],
+      "mesh": "bravebot/head.stl",
+      "summary": "Houses the four-sensor stack at the top of the mast.",
+      "sensor": null
+    },
+    {
+      "id": "mast",
+      "name": "Sensor mast",
+      "group": "structural",
+      "mount_m": [
+        0.02,
+        0.0,
+        0.43
+      ],
+      "mesh": "bravebot/mast.stl",
+      "summary": "Raises the sensor head for an elevated vantage over racks and aisles.",
+      "sensor": null
+    },
+    {
+      "id": "battery",
+      "name": "Hot-swappable battery",
+      "group": "power",
+      "mount_m": [
+        0.02,
+        0.0,
+        0.12
+      ],
+      "mesh": "bravebot/battery.stl",
+      "summary": "2-4 h runtime, ~10 s swap for continuous 24/7 patrol.",
+      "sensor": null
+    },
+    {
+      "id": "edgeai",
+      "name": "Edge AI core",
+      "group": "compute",
+      "mount_m": [
+        -0.03,
+        0.0,
+        0.22
+      ],
+      "mesh": "bravebot/edgeai.stl",
+      "summary": "Local multimodal reasoning: fusion, diagnosis, risk scoring. No cloud.",
+      "sensor": null
+    },
+    {
+      "id": "display",
+      "name": "Front AI display panel",
+      "group": "compute",
+      "mount_m": [
+        0.165,
+        0.0,
+        0.215
+      ],
+      "mesh": "bravebot/display.stl",
+      "summary": "Local status, patrol mode and operator feedback.",
+      "sensor": null
+    },
+    {
+      "id": "rear",
+      "name": "Rear service panel",
+      "group": "structural",
+      "mount_m": [
+        -0.12,
+        0.0,
+        0.215
+      ],
+      "mesh": "bravebot/rear.stl",
+      "summary": "Tool-free maintenance access and modular service layout.",
+      "sensor": null
+    },
+    {
+      "id": "acoustic",
+      "name": "Acoustic imaging array",
+      "group": "sensor",
+      "mount_m": [
+        0.14,
+        0.075,
+        0.58
+      ],
+      "mesh": "bravebot/acoustic.stl",
+      "summary": "Detects ultrasonic leaks, partial discharge and bearing wear.",
+      "sensor": {
+        "modality": "acoustic",
+        "spec": "Phased acoustic imaging array, ultrasonic up to 100 kHz",
+        "fov_deg": 35.0,
+        "range_m": 8.0,
+        "detects": [
+          "coolant micro-leak",
+          "partial discharge",
+          "arcing",
+          "bearing wear"
+        ]
+      }
+    },
+    {
+      "id": "thermal",
+      "name": "Thermal camera",
+      "group": "sensor",
+      "mount_m": [
+        0.145,
+        0.0,
+        0.6
+      ],
+      "mesh": "bravebot/thermal.stl",
+      "summary": "Maps hotspots across UPS, PDU, cable joints, GPUs and racks.",
+      "sensor": {
+        "modality": "thermal",
+        "spec": "Radiometric infrared camera, per-zone baseline learning",
+        "fov_deg": 24.0,
+        "range_m": 12.0,
+        "detects": [
+          "GPU hotspot",
+          "loose connection",
+          "thermal runaway",
+          "aisle imbalance"
+        ]
+      }
+    },
+    {
+      "id": "hdcam",
+      "name": "HD visual AI camera",
+      "group": "sensor",
+      "mount_m": [
+        0.145,
+        -0.075,
+        0.58
+      ],
+      "mesh": "bravebot/hdcam.stl",
+      "summary": "Reads gauges, assets, doors, seals and indicator lights.",
+      "sensor": {
+        "modality": "visual",
+        "spec": "HD camera with on-board gauge OCR, object & scene detection",
+        "fov_deg": 30.0,
+        "range_m": 10.0,
+        "detects": [
+          "open containment",
+          "missing seal",
+          "asset drift",
+          "gauge reading"
+        ]
+      }
+    },
+    {
+      "id": "gas",
+      "name": "Gas / laser telemetry sensor",
+      "group": "sensor",
+      "mount_m": [
+        0.14,
+        0.0,
+        0.535
+      ],
+      "mesh": "bravebot/gas.stl",
+      "summary": "VOC / CO / H2 off-gas; optional OGI / TDLAS for industrial gas.",
+      "sensor": {
+        "modality": "gas",
+        "spec": "VOC / CO / H2 / off-gas; optional OGI / TDLAS (OTC)",
+        "fov_deg": 45.0,
+        "range_m": 4.0,
+        "detects": [
+          "battery off-gas",
+          "refrigerant leak",
+          "flammable gas",
+          "methane"
+        ]
+      }
+    },
+    {
+      "id": "nav",
+      "name": "Navigation sensor cluster",
+      "group": "sensor",
+      "mount_m": [
+        0.145,
+        0.0,
+        0.48
+      ],
+      "mesh": "bravebot/nav.stl",
+      "summary": "Mapping, obstacle avoidance and route following.",
+      "sensor": {
+        "modality": "nav",
+        "spec": "LiDAR + depth navigation cluster: mapping, obstacle avoidance",
+        "fov_deg": 60.0,
+        "range_m": 15.0,
+        "detects": [
+          "obstacle",
+          "free space",
+          "localization"
+        ]
+      }
+    },
+    {
+      "id": "antennaL",
+      "name": "Communication antenna (left)",
+      "group": "comms",
+      "mount_m": [
+        0.0,
+        0.07,
+        0.71
+      ],
+      "mesh": "bravebot/antennaL.stl",
+      "summary": "Network sync and command / communication link.",
+      "sensor": null
+    },
+    {
+      "id": "antennaR",
+      "name": "Communication antenna (right)",
+      "group": "comms",
+      "mount_m": [
+        0.0,
+        -0.07,
+        0.71
+      ],
+      "mesh": "bravebot/antennaR.stl",
+      "summary": "Network sync and command / communication link.",
+      "sensor": null
+    },
+    {
+      "id": "estop",
+      "name": "Emergency stop",
+      "group": "safety",
+      "mount_m": [
+        -0.1,
+        0.11,
+        0.31
+      ],
+      "mesh": "bravebot/estop.stl",
+      "summary": "Hardware safety cut-off for operation around people and equipment.",
+      "sensor": null
+    }
+  ]
+}
