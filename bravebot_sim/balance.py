@@ -36,8 +36,10 @@ import numpy as np
 
 from . import registry as R
 
-# Stance the leg servos hold (matches sim.STANCES["nominal"]).
-STANCE = {"abad": 0.0, "hip": 0.30, "knee": -0.60}
+# Stance the leg servos hold — per-joint in the real LimX (mirrored-axis)
+# convention (registry.STANCE), e.g. hip_L=+0.30, knee_L=+0.60, hip_R=-0.30,
+# knee_R=-0.60: the same physical bent-leg pose the real robot stands in.
+STANCE = R.STANCE
 
 
 # Default gains: calm/stable baseline (scripts/eval_balance.py --tune to retune).
@@ -154,8 +156,7 @@ class BalanceController:
     def hold_stance(self, stance: dict | None = None):
         st = stance or STANCE
         for joint, aid in self._leg_act.items():
-            key = "abad" if "abad" in joint else "hip" if "hip" in joint else "knee"
-            self.d.ctrl[aid] = st[key]
+            self.d.ctrl[aid] = st[joint]
 
     # ---- control ----
     @staticmethod
@@ -222,8 +223,7 @@ def stance_base_height(model, data) -> float:
         if j.type != "revolute":
             continue
         adr = model.jnt_qposadr[mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, j.name)]
-        key = "abad" if "abad" in j.name else "hip" if "hip" in j.name else "knee"
-        data.qpos[adr] = STANCE[key]
+        data.qpos[adr] = STANCE[j.name]
     mujoco.mj_forward(model, data)
     wl = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "wheelL_link")
     wheel_z = data.xpos[wl][2]
@@ -241,8 +241,7 @@ def settle_upright(model, data, controller: "BalanceController", clearance: floa
         if j.type != "revolute":
             continue
         adr = model.jnt_qposadr[mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, j.name)]
-        key = "abad" if "abad" in j.name else "hip" if "hip" in j.name else "knee"
-        data.qpos[adr] = STANCE[key]
+        data.qpos[adr] = STANCE[j.name]
     controller.reset()
     controller.hold_stance()
     mujoco.mj_forward(model, data)

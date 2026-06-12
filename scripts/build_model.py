@@ -71,9 +71,9 @@ def _mesh_props(rel_path: str):
 def _add_inertial(body, mass: float, rel_mesh: str, min_dim: float = 0.05):
     """Explicit solid-box inertial from a known mass + the mesh bounding box.
 
-    Robust for the non-watertight concatenated component meshes (their volume is
-    unreliable, so we never let MuJoCo infer mass from geom density in physics
-    mode). COM sits at the mesh centroid; inertia is the solid-box tensor.
+    Used for the BraveBot payload (original parts, no published inertials): their
+    concatenated meshes have unreliable volume, so we never let MuJoCo infer mass
+    from density. COM sits at the mesh centroid; inertia is the solid-box tensor.
     """
     ext, cen = _mesh_props(rel_mesh)
     x, y, z = (max(float(e), min_dim) for e in ext)
@@ -82,6 +82,14 @@ def _add_inertial(body, mass: float, rel_mesh: str, min_dim: float = 0.05):
     izz = mass / 12.0 * (x * x + y * y)
     ET.SubElement(body, "inertial", pos=_v(cen), mass=f"{mass:.4f}",
                   diaginertia=f"{ixx:.5f} {iyy:.5f} {izz:.5f}")
+
+
+def _add_real_inertial(body, key: str):
+    """Exact LimX WF_TRON1A inertial (full tensor + COM) for a real link."""
+    d = R.LIMX_INERTIAL[key]
+    f = d["full"]   # ixx iyy izz ixy ixz iyz
+    ET.SubElement(body, "inertial", pos=_v(d["com"]), mass=f"{d['m']:.4f}",
+                  fullinertia=f"{f[0]:.6f} {f[1]:.6f} {f[2]:.6f} {f[3]:.6f} {f[4]:.6f} {f[5]:.6f}")
 
 
 # --------------------------------------------------------------------------- #
@@ -96,14 +104,14 @@ BASE_Z = -R.TRON1_LINK_POS["wheelL"][2] + R.WHEEL_RADIUS
 #  MJCF                                                                         #
 # --------------------------------------------------------------------------- #
 
-# Leg stance held by stiff position servos in physics mode (hip, knee, abad).
-# kv adds actuator damping so the legs don't sag (~9° sag without it), keeping
-# the CoM height L constant so the balance plant stays well-tuned.
-PHYS_STANCE = {"hip": 0.30, "knee": -0.60, "abad": 0.0}
-LEG_SERVO = {"abad": dict(kp=500, kv=25, damping=6, fr=120),
-             "hip":  dict(kp=900, kv=45, damping=10, fr=160),
-             "knee": dict(kp=900, kv=45, damping=10, fr=160)}
-WHEEL_PEAK_TORQUE = 60.0   # N·m, TRON 1 peak
+# Leg position-servo gains (the joint controller). forcerange is the REAL LimX
+# actuator effort (80 N·m legs). kv adds damping so the legs hold the stance.
+LEG_SERVO = {"abad": dict(kp=600, kv=25, damping=4, friction=0.2, armature=0.02),
+             "hip":  dict(kp=900, kv=45, damping=6, friction=0.2, armature=0.02),
+             "knee": dict(kp=900, kv=45, damping=6, friction=0.2, armature=0.02)}
+LEG_EFFORT = 80.0          # N·m, real LimX leg actuators
+WHEEL_PEAK_TORQUE = 40.0   # N·m, real LimX wheel actuators
+WHEEL_HALF_WIDTH = 0.024   # m, tire half-width (from wheel mesh extent)
 
 
 def build_mjcf(physics: bool = False) -> str:
@@ -163,7 +171,7 @@ def build_mjcf(physics: bool = False) -> str:
     ET.SubElement(base, "geom", type="mesh", mesh="m_base", rgba="0.82 0.84 0.88 1")
     ET.SubElement(base, "site", name="imu", pos="0 0 0", rgba="1 1 1 0.3")
     if physics:
-        _add_inertial(base, LINK_MASS["base"], "tron1/base_Link.stl")
+        _add_real_inertial(base, "base")
     else:
         ET.SubElement(base, "inertial", pos="0 0 -0.1", mass=str(LINK_MASS["base"]),
                       diaginertia="0.25 0.25 0.18")
@@ -186,29 +194,42 @@ def build_mjcf(physics: bool = False) -> str:
         parent_body = bodies[_canonical(j.parent)]
         b = ET.SubElement(parent_body, "body", name=f"{j.child}_link", pos=_v(j.origin))
         link_key = _link_kind(j.child)
+        is_wheel = "wheel" in j.child
         attrs = {"name": j.name, "type": "hinge", "axis": _v(j.axis), "pos": "0 0 0"}
         if j.type == "revolute":
-            attrs["range"] = f"{j.lower} {j.upper}"
+            attrs["range"] = f"{j.lower} {j.upper}"        # real LimX joint limits
             if physics:
-                attrs["damping"] = str(LEG_SERVO[link_key]["damping"])
+                s = LEG_SERVO[link_key]
+                attrs.update(damping=str(s["damping"]), frictionloss=str(s["friction"]),
+                             armature=str(s["armature"]))
         else:
             attrs["limited"] = "false"
             if physics:
-                attrs["damping"] = "0.05"          # tiny wheel bearing friction
+                attrs.update(damping="0.05", frictionloss="0.01", armature="0.01")  # real wheel
         ET.SubElement(b, "joint", **attrs)
-        is_wheel = "wheel" in j.child
-        rgba = "0.30 0.32 0.36 1" if is_wheel else "0.62 0.66 0.72 1"
+
+        rgba = "0.20 0.21 0.24 1" if is_wheel else "0.62 0.66 0.72 1"
         gattrs = dict(type="mesh", mesh=f"m_{_canonical_mesh(j.child)}", rgba=rgba)
-        if is_wheel:
-            gattrs.update(contype="2" if physics else "1", conaffinity="1", condim="4",
-                          friction="1.4 0.02 0.001", solref="0.008 1", solimp="0.95 0.99 0.001",
-                          priority="2")
-        elif not physics:
-            gattrs.update(contype="0", conaffinity="0")   # kinematic: no collision
-        ET.SubElement(b, "geom", **gattrs)
+        if is_wheel and physics:
+            # tire = clean cylinder collider on the spin axis (y) so it ROLLS with
+            # real grip instead of the faceted convex-hull mesh; high friction.
+            gattrs.update(contype="0", conaffinity="0")    # mesh is visual only
+            ET.SubElement(b, "geom", **gattrs)
+            hw = WHEEL_HALF_WIDTH
+            ET.SubElement(b, "geom", name=f"{j.child}_tire", type="cylinder",
+                          fromto=f"0 {-hw} 0 0 {hw} 0", size=str(R.WHEEL_RADIUS),
+                          contype="2", conaffinity="1", condim="3", priority="3",
+                          friction="2.2 0.05 0.002", solref="0.01 1",
+                          solimp="0.97 0.99 0.001", rgba="0.08 0.08 0.10 1")
+        else:
+            if is_wheel:
+                gattrs.update(contype="1", conaffinity="1", condim="4", friction="1.4 0.02 0.001")
+            elif not physics:
+                gattrs.update(contype="0", conaffinity="0")   # kinematic: no collision
+            ET.SubElement(b, "geom", **gattrs)
+
         if physics:
-            _add_inertial(b, LINK_MASS[link_key],
-                          f"tron1/{R.TRON1_MESH[j.child]}.stl", min_dim=0.03)
+            _add_real_inertial(b, j.child)                 # exact LimX link inertial
         else:
             ET.SubElement(b, "inertial", pos="0 0 0", mass=str(LINK_MASS[link_key]),
                           diaginertia="0.01 0.01 0.01")
@@ -235,11 +256,11 @@ def build_mjcf(physics: bool = False) -> str:
             s = LEG_SERVO[_link_kind(j.child)]
             ET.SubElement(act, "position", name=f"{j.name}_pos", joint=j.name,
                           kp=str(s["kp"]), kv=str(s["kv"]),
-                          forcerange=f"-{s['fr']} {s['fr']}")
+                          forcerange=f"-{LEG_EFFORT} {LEG_EFFORT}")   # real 80 N·m
         for side in ("L", "R"):
             ET.SubElement(act, "motor", name=f"wheel_{side}_mot", joint=f"wheel_{side}",
                           gear="1", ctrlrange=f"-{WHEEL_PEAK_TORQUE} {WHEEL_PEAK_TORQUE}",
-                          forcerange=f"-{WHEEL_PEAK_TORQUE} {WHEEL_PEAK_TORQUE}")
+                          forcerange=f"-{WHEEL_PEAK_TORQUE} {WHEEL_PEAK_TORQUE}")   # real 40 N·m
     else:
         for side in ("L", "R"):
             ET.SubElement(act, "velocity", name=f"wheel_{side}_vel", joint=f"wheel_{side}",
@@ -280,7 +301,17 @@ def _inertial(parent, mass, ext):
                   ixy="0", ixz="0", iyz="0")
 
 
-def _link(robot, name, mesh_rel, mass, rgba="0.8 0.82 0.86 1"):
+def _real_inertial_urdf(link, key):
+    d = R.LIMX_INERTIAL[key]
+    f = d["full"]
+    ine = ET.SubElement(link, "inertial")
+    ET.SubElement(ine, "origin", xyz=_v(d["com"]), rpy="0 0 0")
+    ET.SubElement(ine, "mass", value=f"{d['m']:.4f}")
+    ET.SubElement(ine, "inertia", ixx=f"{f[0]:.6f}", iyy=f"{f[1]:.6f}", izz=f"{f[2]:.6f}",
+                  ixy=f"{f[3]:.6f}", ixz=f"{f[4]:.6f}", iyz=f"{f[5]:.6f}")
+
+
+def _link(robot, name, mesh_rel, mass, rgba="0.8 0.82 0.86 1", real_key=None):
     ext, _ = _mesh_bbox(mesh_rel)
     link = ET.SubElement(robot, "link", name=name)
     for tag in ("visual", "collision"):
@@ -291,21 +322,25 @@ def _link(robot, name, mesh_rel, mass, rgba="0.8 0.82 0.86 1"):
         if tag == "visual":
             mat = ET.SubElement(node, "material", name=f"{name}_mat")
             ET.SubElement(mat, "color", rgba=rgba)
-    _inertial(link, mass, ext)
+    if real_key:
+        _real_inertial_urdf(link, real_key)   # exact LimX inertial
+    else:
+        _inertial(link, mass, ext)
     return link
 
 
 def build_urdf() -> str:
     robot = ET.Element("robot", name="bravebot")
 
-    _link(robot, "base_link", "tron1/base_Link.stl", LINK_MASS["base"])
+    _link(robot, "base_link", "tron1/base_Link.stl", LINK_MASS["base"], real_key="base")
 
-    # leg chain
+    # leg chain — real LimX axes, limits, inertials and actuator efforts
     for j in R.LEG_JOINTS:
         child_link = f"{j.child}_link"
         mesh = f"tron1/{R.TRON1_MESH[j.child]}.stl"
         rgba = "0.25 0.27 0.30 1" if "wheel" in j.child else "0.6 0.64 0.7 1"
-        _link(robot, child_link, mesh, LINK_MASS[_link_kind(j.child)], rgba)
+        _link(robot, child_link, mesh, LINK_MASS[_link_kind(j.child)], rgba, real_key=j.child)
+        jd = R.LIMX_JOINT[j.child]
         joint = ET.SubElement(robot, "joint", name=j.name,
                               type="continuous" if j.type == "continuous" else "revolute")
         ET.SubElement(joint, "parent", link=f"{_canonical(j.parent)}_link"
@@ -315,7 +350,9 @@ def build_urdf() -> str:
         ET.SubElement(joint, "axis", xyz=_v(j.axis))
         if j.type == "revolute":
             ET.SubElement(joint, "limit", lower=str(j.lower), upper=str(j.upper),
-                          effort="60", velocity="15")
+                          effort=str(jd["effort"]), velocity=str(jd["vel"]))
+        else:
+            ET.SubElement(joint, "limit", effort=str(jd["effort"]), velocity=str(jd["vel"]))
 
     # BraveBot modification links (fixed joints to base)
     for comp in R.COMPONENTS:

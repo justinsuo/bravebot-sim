@@ -43,9 +43,8 @@ MODEL = os.path.normpath(os.path.join(_HERE, "..", "..", "description", "mjcf", 
 
 LEG_JOINTS = ["abad_L", "hip_L", "knee_L", "abad_R", "hip_R", "knee_R"]
 LEG_RANGE = np.array([0.4, 0.6, 0.6, 0.4, 0.6, 0.6])   # action -> rad offset
-WHEEL_TORQUE = 60.0
-STANCE_VEC = np.array([STANCE["abad"], STANCE["hip"], STANCE["knee"],
-                       STANCE["abad"], STANCE["hip"], STANCE["knee"]])
+WHEEL_TORQUE = 40.0   # real LimX wheel actuator
+STANCE_VEC = np.array([STANCE[j] for j in LEG_JOINTS])
 
 
 class BraveBotLocomotionEnv(gym.Env):

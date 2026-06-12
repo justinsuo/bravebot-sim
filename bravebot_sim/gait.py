@@ -24,8 +24,8 @@ from .balance import STANCE
 class Gait:
     """Generates alternating leg-stepping targets, phase-advanced over time."""
 
-    def __init__(self, freq: float = 1.1, hip_amp: float = 0.05,
-                 knee_amp: float = 0.08, abad_amp: float = 0.0):
+    def __init__(self, freq: float = 1.0, hip_amp: float = 0.03,
+                 knee_amp: float = 0.05, abad_amp: float = 0.0):
         self.freq = freq
         self.hip_amp = hip_amp
         self.knee_amp = knee_amp      # bends the knee in swing -> foot lifts a touch
@@ -39,14 +39,21 @@ class Gait:
             self.phase += 2 * math.pi * self.freq * dt
 
     def leg_targets(self) -> dict:
-        """Stepping targets for the 6 leg joints around the nominal stance."""
+        """Stepping targets for the 6 leg joints around the (per-joint) stance.
+
+        Offsets are mirrored L/R to match the real LimX joint-axis convention so
+        the legs swing symmetrically.
+        """
         ph = self.phase
-        sL, sR = math.sin(ph), math.sin(ph + math.pi)
+        sL = math.sin(ph)
+        sR = -sL   # 180 deg out of phase
+        # mirrored axes (hip_R, knee_R flipped vs L) -> same joint-sign produces
+        # opposite physical swing, i.e. an alternating gait.
         return {
-            "hip_L": STANCE["hip"] + self.hip_amp * sL,
-            "knee_L": STANCE["knee"] - self.knee_amp * max(0.0, sL),
-            "abad_L": self.abad_amp * sL,
-            "hip_R": STANCE["hip"] + self.hip_amp * sR,
-            "knee_R": STANCE["knee"] - self.knee_amp * max(0.0, sR),
-            "abad_R": self.abad_amp * sR,
+            "hip_L": STANCE["hip_L"] + self.hip_amp * sL,
+            "hip_R": STANCE["hip_R"] + self.hip_amp * sL,
+            "knee_L": STANCE["knee_L"] + self.knee_amp * max(0.0, sL),
+            "knee_R": STANCE["knee_R"] - self.knee_amp * max(0.0, sR),
+            "abad_L": STANCE["abad_L"] + self.abad_amp * sL,
+            "abad_R": STANCE["abad_R"] + self.abad_amp * sL,
         }

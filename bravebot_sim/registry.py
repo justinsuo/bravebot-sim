@@ -68,19 +68,53 @@ def _diff(child: str, parent: str) -> Vec3:
     return (c[0] - p[0], c[1] - p[1], c[2] - p[2])
 
 
+# --------------------------------------------------------------------------- #
+#  Real LimX WF_TRON1A data (from limxdynamics/robot-description robot.urdf)    #
+#  Inertials are full tensors; joint axes are MIRRORED on the right leg, exactly#
+#  as the real robot. Actuators: 80 N·m legs / 40 N·m wheels, 15 / 40 rad/s.    #
+# --------------------------------------------------------------------------- #
+
+LIMX_INERTIAL = {
+    'base':   dict(m=9.5850, com=(0.04576, 0.00014, -0.16398),  full=(0.140110, 0.110641, 0.098945, 0.000535, 0.028184, -0.000027)),
+    'abadL':  dict(m=1.4690, com=(-0.06977, 0.04479, 0.00057),  full=(0.001555, 0.002359, 0.002081, 0.000398, -0.000013, -0.000001)),
+    'hipL':   dict(m=2.3000, com=(-0.02869, -0.04770, -0.03992), full=(0.016937, 0.022853, 0.009334, 0.001647, -0.009233, 0.002202)),
+    'kneeL':  dict(m=1.4900, com=(0.11913, 0.01106, -0.20363),  full=(0.013233, 0.017661, 0.005017, -0.000435, 0.006936, 0.000791)),
+    'wheelL': dict(m=1.0800, com=(0.00003, 0.00807, -0.00002),  full=(0.005155, 0.009743, 0.005154, 0.0, -0.000001, 0.0)),
+    'abadR':  dict(m=1.4690, com=(-0.06977, -0.04479, 0.00057), full=(0.001555, 0.002359, 0.002081, -0.000398, -0.000013, 0.000001)),
+    'hipR':   dict(m=2.3000, com=(-0.02869, 0.04770, -0.03992), full=(0.016937, 0.022853, 0.009334, -0.001647, -0.009233, -0.002202)),
+    'kneeR':  dict(m=1.4900, com=(0.11913, -0.01106, -0.20363), full=(0.013233, 0.017661, 0.005017, 0.000435, 0.006936, -0.000791)),
+    'wheelR': dict(m=1.0800, com=(0.00003, -0.00807, -0.00002), full=(0.005155, 0.009743, 0.005154, 0.0, -0.000001, 0.0)),
+}
+
+LIMX_JOINT = {
+    'abadL':  dict(axis=(1, 0, 0),  lower=-0.38397, upper=1.39626, effort=80, vel=15, continuous=False),
+    'hipL':   dict(axis=(0, 1, 0),  lower=-1.01229, upper=1.39626, effort=80, vel=15, continuous=False),
+    'kneeL':  dict(axis=(0, -1, 0), lower=-0.87267, upper=1.36136, effort=80, vel=15, continuous=False),
+    'wheelL': dict(axis=(0, 1, 0),  lower=0.0, upper=0.0, effort=40, vel=40, continuous=True),
+    'abadR':  dict(axis=(1, 0, 0),  lower=-1.39626, upper=0.38397, effort=80, vel=15, continuous=False),
+    'hipR':   dict(axis=(0, -1, 0), lower=-1.39626, upper=1.01229, effort=80, vel=15, continuous=False),
+    'kneeR':  dict(axis=(0, 1, 0),  lower=-1.36136, upper=0.87267, effort=80, vel=15, continuous=False),
+    'wheelR': dict(axis=(0, 1, 0),  lower=0.0, upper=0.0, effort=40, vel=40, continuous=True),
+}
+
+# Standing stance in the real (mirrored-axis) convention: the same physical
+# bent-leg pose as before, with the joint signs the LimX axes require.
+STANCE = {"abad_L": 0.0, "hip_L": 0.30, "knee_L": 0.60,
+          "abad_R": 0.0, "hip_R": -0.30, "knee_R": -0.60}
+
 # The WF_TRON1A leg: abad (roll) -> hip (pitch) -> knee (pitch) -> wheel (drive).
 LEG_JOINTS: list[Joint] = []
-for side, sgn in (("L", 1.0), ("R", -1.0)):
-    LEG_JOINTS += [
-        Joint(f"abad_{side}", "base", f"abad{side}", _diff(f"abad{side}", "base"),
-              (1, 0, 0), "revolute", -0.5, 0.5, 0.0),
-        Joint(f"hip_{side}", f"abad{side}", f"hip{side}", _diff(f"hip{side}", f"abad{side}"),
-              (0, 1, 0), "revolute", -1.2, 1.2, 0.30),
-        Joint(f"knee_{side}", f"hip{side}", f"knee{side}", _diff(f"knee{side}", f"hip{side}"),
-              (0, 1, 0), "revolute", -2.2, 0.0, -0.60),
-        Joint(f"wheel_{side}", f"knee{side}", f"wheel{side}", _diff(f"wheel{side}", f"knee{side}"),
-              (0, 1, 0), "continuous"),
-    ]
+for side in ("L", "R"):
+    for base in ("abad", "hip", "knee", "wheel"):
+        child = f"{base}{side}"
+        parent = "base" if base == "abad" else (
+            f"abad{side}" if base == "hip" else f"hip{side}" if base == "knee" else f"knee{side}")
+        jd = LIMX_JOINT[child]
+        name = f"{base}_{side}"
+        LEG_JOINTS.append(Joint(
+            name, parent, child, _diff(child, "base" if base == "abad" else parent),
+            jd["axis"], "continuous" if jd["continuous"] else "revolute",
+            jd["lower"], jd["upper"], STANCE.get(name, 0.0)))
 
 
 # --------------------------------------------------------------------------- #

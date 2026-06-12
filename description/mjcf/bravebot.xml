@@ -113,40 +113,40 @@
         <geom type="mesh" mesh="m_estop" rgba="0.90 0.25 0.20 1"/>
       </body>
       <body name="abadL_link" pos="0.05556 0.105 -0.2602">
-        <joint name="abad_L" type="hinge" axis="1 0 0" pos="0 0 0" range="-0.5 0.5"/>
+        <joint name="abad_L" type="hinge" axis="1 0 0" pos="0 0 0" range="-0.38397 1.39626"/>
         <geom type="mesh" mesh="m_abadL" rgba="0.62 0.66 0.72 1" contype="0" conaffinity="0"/>
         <inertial pos="0 0 0" mass="1.4" diaginertia="0.01 0.01 0.01"/>
         <body name="hipL_link" pos="-0.077 0.0205 0">
-          <joint name="hip_L" type="hinge" axis="0 1 0" pos="0 0 0" range="-1.2 1.2"/>
+          <joint name="hip_L" type="hinge" axis="0 1 0" pos="0 0 0" range="-1.01229 1.39626"/>
           <geom type="mesh" mesh="m_hipL" rgba="0.62 0.66 0.72 1" contype="0" conaffinity="0"/>
           <inertial pos="0 0 0" mass="1.6" diaginertia="0.01 0.01 0.01"/>
           <body name="kneeL_link" pos="-0.15 -0.0205 -0.25981">
-            <joint name="knee_L" type="hinge" axis="0 1 0" pos="0 0 0" range="-2.2 0.0"/>
+            <joint name="knee_L" type="hinge" axis="0 -1 0" pos="0 0 0" range="-0.87267 1.36136"/>
             <geom type="mesh" mesh="m_kneeL" rgba="0.62 0.66 0.72 1" contype="0" conaffinity="0"/>
             <inertial pos="0 0 0" mass="1.2" diaginertia="0.01 0.01 0.01"/>
             <body name="wheelL_link" pos="0.15 0.0435 -0.25981">
               <joint name="wheel_L" type="hinge" axis="0 1 0" pos="0 0 0" limited="false"/>
-              <geom type="mesh" mesh="m_wheelL" rgba="0.30 0.32 0.36 1" contype="1" conaffinity="1" condim="4" friction="1.4 0.02 0.001" solref="0.008 1" solimp="0.95 0.99 0.001" priority="2"/>
+              <geom type="mesh" mesh="m_wheelL" rgba="0.20 0.21 0.24 1" contype="1" conaffinity="1" condim="4" friction="1.4 0.02 0.001"/>
               <inertial pos="0 0 0" mass="1.1" diaginertia="0.01 0.01 0.01"/>
             </body>
           </body>
         </body>
       </body>
       <body name="abadR_link" pos="0.05556 -0.105 -0.2602">
-        <joint name="abad_R" type="hinge" axis="1 0 0" pos="0 0 0" range="-0.5 0.5"/>
+        <joint name="abad_R" type="hinge" axis="1 0 0" pos="0 0 0" range="-1.39626 0.38397"/>
         <geom type="mesh" mesh="m_abadR" rgba="0.62 0.66 0.72 1" contype="0" conaffinity="0"/>
         <inertial pos="0 0 0" mass="1.4" diaginertia="0.01 0.01 0.01"/>
         <body name="hipR_link" pos="-0.077 -0.0205 0">
-          <joint name="hip_R" type="hinge" axis="0 1 0" pos="0 0 0" range="-1.2 1.2"/>
+          <joint name="hip_R" type="hinge" axis="0 -1 0" pos="0 0 0" range="-1.39626 1.01229"/>
           <geom type="mesh" mesh="m_hipR" rgba="0.62 0.66 0.72 1" contype="0" conaffinity="0"/>
           <inertial pos="0 0 0" mass="1.6" diaginertia="0.01 0.01 0.01"/>
           <body name="kneeR_link" pos="-0.15 0.0205 -0.25981">
-            <joint name="knee_R" type="hinge" axis="0 1 0" pos="0 0 0" range="-2.2 0.0"/>
+            <joint name="knee_R" type="hinge" axis="0 1 0" pos="0 0 0" range="-1.36136 0.87267"/>
             <geom type="mesh" mesh="m_kneeR" rgba="0.62 0.66 0.72 1" contype="0" conaffinity="0"/>
             <inertial pos="0 0 0" mass="1.2" diaginertia="0.01 0.01 0.01"/>
             <body name="wheelR_link" pos="0.15 -0.0435 -0.25981">
               <joint name="wheel_R" type="hinge" axis="0 1 0" pos="0 0 0" limited="false"/>
-              <geom type="mesh" mesh="m_wheelR" rgba="0.30 0.32 0.36 1" contype="1" conaffinity="1" condim="4" friction="1.4 0.02 0.001" solref="0.008 1" solimp="0.95 0.99 0.001" priority="2"/>
+              <geom type="mesh" mesh="m_wheelR" rgba="0.20 0.21 0.24 1" contype="1" conaffinity="1" condim="4" friction="1.4 0.02 0.001"/>
               <inertial pos="0 0 0" mass="1.1" diaginertia="0.01 0.01 0.01"/>
             </body>
           </body>
