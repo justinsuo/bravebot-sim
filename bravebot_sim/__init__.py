@@ -25,20 +25,42 @@ __all__ = [
     "BraveBot", "Anomaly", "SensorReading", "PatrolController", "diagnose",
     "Alert", "facility", "COMPONENTS", "SENSORS", "SPECS", "COMPONENT_BY_ID",
     "SENSOR_COMPONENTS", "model_path", "scene_path",
+    "PhysicsBraveBot", "physics_model_path", "physics_scene_path",
 ]
+
+
+def __getattr__(name):
+    # lazy import so the kinematic API doesn't require the balance/physics stack
+    if name == "PhysicsBraveBot":
+        from .physics import PhysicsBraveBot
+        return PhysicsBraveBot
+    raise AttributeError(name)
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.normpath(os.path.join(_HERE, ".."))
 
 
 def model_path() -> str:
-    """Path to the bare robot MJCF."""
+    """Path to the bare kinematic robot MJCF."""
     return os.path.join(_ROOT, "description", "mjcf", "bravebot.xml")
 
 
+def physics_model_path() -> str:
+    """Path to the bare physics robot MJCF (real dynamics)."""
+    return os.path.join(_ROOT, "description", "mjcf", "bravebot_physics.xml")
+
+
 def scene_path() -> str:
-    """Path to the facility scene MJCF (builds it if missing)."""
+    """Path to the kinematic facility scene MJCF (builds it if missing)."""
     p = facility.SCENE_PATH
     if not os.path.exists(p):
         facility.build_scene_xml(p)
+    return p
+
+
+def physics_scene_path() -> str:
+    """Path to the physics facility scene MJCF (builds it if missing)."""
+    p = facility.SCENE_PHYS_PATH
+    if not os.path.exists(p):
+        facility.build_scene_xml(p, robot="bravebot_physics.xml")
     return p

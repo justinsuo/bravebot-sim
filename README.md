@@ -51,9 +51,13 @@ python scripts/view.py               # open the interactive viewer
 ### Interactive viewer
 
 ```bash
-python scripts/view.py               # robot in the data-center scene
+python scripts/view.py               # kinematic robot in the data-center scene
+python scripts/view.py --physics     # REAL physics: balances on its wheels
 python scripts/view.py --bare        # robot only, empty floor
 ```
+
+> macOS note: the live viewer needs `mjpython scripts/view.py` (MuJoCo requires
+> its own interpreter for the GUI). Headless scripts use plain `python`.
 
 | Key | Action | Key | Action |
 |-----|--------|-----|--------|
@@ -99,12 +103,55 @@ pos, look = bot.sensor_frame("thermal")  # world pose of any sensor
 bot.set_stance("low")                    # wheel-legged variable geometry
 ```
 
-The default control mode is **kinematic patrol**: the base follows a unicycle
-(v, ω) model and the wheels/legs are posed for display. It is deterministic and
-never tips over — the right abstraction for inspection-coverage and sensor
-simulation. Velocity actuators on the wheels are present in the MJCF for
-balance/physics research, but keeping a wheeled biped upright is the real-robot
-RL problem and is intentionally out of scope here.
+There are **two simulation modes**:
+
+- **Kinematic** (`BraveBot`, default): the base follows a unicycle (v, ω) model
+  and the wheels/legs are posed for display. Deterministic, never tips — the
+  right abstraction for inspection-coverage and sensor simulation.
+- **Real physics** (`PhysicsBraveBot`): full MuJoCo rigid-body dynamics —
+  gravity, contacts and actuator torques are all real. The robot is a Segway-class
+  wheeled inverted pendulum (unstable in pitch, ~34 kg, CoM 0.69 m above the
+  axle) and **actively balances on its two wheels** while driving.
+
+## Real physics & balance control
+
+```python
+from bravebot_sim import PhysicsBraveBot, physics_scene_path
+
+bot = PhysicsBraveBot(physics_scene_path())   # loads bravebot_physics.xml
+bot.drive(0.7, 0.0)                            # 0.7 m/s forward
+for _ in range(500):
+    bot.step(0.02)                             # mj_step at 500 Hz + balance loop
+print(bot.state().pitch, bot.fell)             # it stays upright
+```
+
+The two wheel **torque motors** do all the balancing, driving and steering; the
+legs are held at the stance by stiff **position servos**. The controller
+([`bravebot_sim/balance.py`](bravebot_sim/balance.py)) is a cascaded
+state-feedback law on `pitch / pitch-rate / forward-velocity / yaw-rate`, read
+from MuJoCo IMU/gyro/velocimeter sensors:
+
+```
+pitch_ref = clip(k_pv·(v_cmd − v), ±lean_max)        # lean to accelerate
+τ_bal     = k_p·(pitch − pitch_ref) + k_d·pitch_rate
+τ_turn    = k_yaw·(omega_cmd − yaw_rate)
+τ_L = τ_bal − τ_turn ;  τ_R = τ_bal + τ_turn         # differential steering
+```
+
+Gains are **auto-tuned** against a headless eval harness:
+
+```bash
+python scripts/eval_balance.py --eval         # score the current gains
+python scripts/eval_balance.py --tune         # search gains -> bravebot_sim/gains.json
+python scripts/eval_balance.py --regression   # assert it stays upright (guards the sign)
+python scripts/render_physics_video.py        # balance -> drive -> shove-recovery MP4
+```
+
+Tuned result: stays upright through stand → drive → turn → drive with **pitch
+RMS ~2°**, and recovers from a 120 N external shove. A high-CoM wheeled biped
+tips if asked to turn faster than ~0.6 rad/s, so the controller caps and
+slew-limits the velocity/yaw commands. (Full rigid-body **gait/RL** for the real
+TRON 1 is a separate problem; here the legs stay at a fixed stance.)
 
 ---
 
@@ -114,25 +161,30 @@ RL problem and is intentionally out of scope here.
 bravebot_sim/         the library
   registry.py         every component, mount frame, sensor + spec (source of truth)
   meshgen.py          procedural STL generation for BraveBot parts (trimesh)
-  sim.py              BraveBot class: drive, stance, sensor frames, scan
+  sim.py              BraveBot (kinematic): drive, stance, sensor frames, scan
+  balance.py          BalanceController + Gains for the real-physics model
+  physics.py          PhysicsBraveBot: mj_step dynamics + balance loop
+  gains.json          auto-tuned balance gains
   facility.py         data-center scene + anomalies + patrol waypoints
   patrol.py           waypoint controller + edge-AI diagnosis stub
 description/
   meshes/tron1/       real LimX TRON 1 link meshes (Apache-2.0, see NOTICE)
   meshes/bravebot/    generated BraveBot component meshes
-  mjcf/               MuJoCo model (bravebot.xml) + scene (bravebot_scene.xml)
+  mjcf/               bravebot.xml (kinematic) + bravebot_physics.xml (dynamics) + scenes
   urdf/               bravebot.urdf for ROS 2 / Gazebo / RViz
   config/             components.json manifest
-scripts/              build_model · view · patrol_demo · render_hero · export_manifest
-renders/              hero stills + patrol frames
+scripts/              build_model · view · patrol_demo · eval_balance ·
+                      render_hero · render_patrol_video · render_physics_video · export_manifest
+renders/              hero stills + patrol & physics videos
 ```
 
 ## Regenerating everything
 
 ```bash
-python scripts/build_model.py      # meshes + MJCF + URDF
+python scripts/build_model.py      # meshes + kinematic & physics MJCF + URDF
 python scripts/export_manifest.py  # components.json + bill of materials
 python scripts/render_hero.py      # hero stills (offscreen)
+python scripts/eval_balance.py --regression   # verify the physics model still balances
 ```
 
 ---

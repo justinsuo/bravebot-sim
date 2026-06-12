@@ -132,27 +132,7 @@ class BraveBot:
 
     def scan(self, anomalies: "list[Anomaly]") -> list[SensorReading]:
         """Return readings for anomalies that fall in a sensor's FOV + range."""
-        out: list[SensorReading] = []
-        for comp in R.SENSOR_COMPONENTS:
-            sensor = comp.sensor
-            pos, fwd = self.sensor_frame(comp.id)
-            for anom in anomalies:
-                if anom.modality != sensor.modality:
-                    continue
-                rel = np.array(anom.pos) - pos
-                dist = float(np.linalg.norm(rel))
-                if dist > sensor.range_m or dist < 1e-3:
-                    continue
-                cosang = float(np.dot(rel / dist, fwd))
-                if cosang < math.cos(math.radians(sensor.fov_deg)):
-                    continue
-                conf = max(0.0, min(0.99, (1.0 - dist / sensor.range_m) * (cosang ** 0.5)))
-                if conf < 0.25:
-                    continue
-                out.append(SensorReading(comp.id, sensor.modality, anom.name,
-                                         dist, conf, anom.note))
-        out.sort(key=lambda r: -r.confidence)
-        return out
+        return scan_anomalies(self.sensor_frame, anomalies)
 
 
 @dataclass
@@ -161,6 +141,34 @@ class Anomaly:
     modality: str          # acoustic | thermal | gas | visual
     pos: tuple[float, float, float]
     note: str
+
+
+def scan_anomalies(frame_fn, anomalies: "list[Anomaly]") -> list[SensorReading]:
+    """Shared FOV/range scan used by both the kinematic and physics models.
+
+    `frame_fn(sensor_id)` returns (world_pos, forward_unit_vector).
+    """
+    out: list[SensorReading] = []
+    for comp in R.SENSOR_COMPONENTS:
+        sensor = comp.sensor
+        pos, fwd = frame_fn(comp.id)
+        for anom in anomalies:
+            if anom.modality != sensor.modality:
+                continue
+            rel = np.array(anom.pos) - pos
+            dist = float(np.linalg.norm(rel))
+            if dist > sensor.range_m or dist < 1e-3:
+                continue
+            cosang = float(np.dot(rel / dist, fwd))
+            if cosang < math.cos(math.radians(sensor.fov_deg)):
+                continue
+            conf = max(0.0, min(0.99, (1.0 - dist / sensor.range_m) * (cosang ** 0.5)))
+            if conf < 0.25:
+                continue
+            out.append(SensorReading(comp.id, sensor.modality, anom.name,
+                                     dist, conf, anom.note))
+    out.sort(key=lambda r: -r.confidence)
+    return out
 
 
 # --------------------------------------------------------------------------- #

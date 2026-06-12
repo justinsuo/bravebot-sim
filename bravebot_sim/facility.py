@@ -20,6 +20,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, ".."))
 MJCF_DIR = os.path.join(ROOT, "description", "mjcf")
 SCENE_PATH = os.path.join(MJCF_DIR, "bravebot_scene.xml")
+SCENE_PHYS_PATH = os.path.join(MJCF_DIR, "bravebot_scene_physics.xml")
 
 RACK = (0.6, 1.0, 2.0)        # depth, width, height (m)
 AISLE_HALF = 1.4              # half-width of the patrol aisle

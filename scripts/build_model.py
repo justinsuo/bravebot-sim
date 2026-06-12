@@ -31,6 +31,7 @@ from bravebot_sim import meshgen          # noqa: E402
 
 MESH_DIR = os.path.join(ROOT, "description", "meshes")
 MJCF_PATH = os.path.join(ROOT, "description", "mjcf", "bravebot.xml")
+MJCF_PHYS_PATH = os.path.join(ROOT, "description", "mjcf", "bravebot_physics.xml")
 URDF_PATH = os.path.join(ROOT, "description", "urdf", "bravebot.urdf")
 
 # Real link densities are unknown; approximate masses (kg) for physics mode.
@@ -61,6 +62,28 @@ def _mesh_bbox(rel_path: str):
     return m.extents, m.bounds
 
 
+def _mesh_props(rel_path: str):
+    """Return (extents, centroid) of a mesh — used for physics inertials."""
+    m = trimesh.load(os.path.join(MESH_DIR, rel_path), force="mesh")
+    return np.asarray(m.extents), np.asarray((m.bounds[0] + m.bounds[1]) / 2.0)
+
+
+def _add_inertial(body, mass: float, rel_mesh: str, min_dim: float = 0.05):
+    """Explicit solid-box inertial from a known mass + the mesh bounding box.
+
+    Robust for the non-watertight concatenated component meshes (their volume is
+    unreliable, so we never let MuJoCo infer mass from geom density in physics
+    mode). COM sits at the mesh centroid; inertia is the solid-box tensor.
+    """
+    ext, cen = _mesh_props(rel_mesh)
+    x, y, z = (max(float(e), min_dim) for e in ext)
+    ixx = mass / 12.0 * (y * y + z * z)
+    iyy = mass / 12.0 * (x * x + z * z)
+    izz = mass / 12.0 * (x * x + y * y)
+    ET.SubElement(body, "inertial", pos=_v(cen), mass=f"{mass:.4f}",
+                  diaginertia=f"{ixx:.5f} {iyy:.5f} {izz:.5f}")
+
+
 # --------------------------------------------------------------------------- #
 #  Base standing height                                                        #
 # --------------------------------------------------------------------------- #
@@ -73,11 +96,27 @@ BASE_Z = -R.TRON1_LINK_POS["wheelL"][2] + R.WHEEL_RADIUS
 #  MJCF                                                                         #
 # --------------------------------------------------------------------------- #
 
-def build_mjcf() -> str:
-    mj = ET.Element("mujoco", model="bravebot")
-    ET.SubElement(mj, "compiler", meshdir=os.path.relpath(MESH_DIR, os.path.dirname(MJCF_PATH)),
+# Leg stance held by stiff position servos in physics mode (hip, knee, abad).
+# kv adds actuator damping so the legs don't sag (~9° sag without it), keeping
+# the CoM height L constant so the balance plant stays well-tuned.
+PHYS_STANCE = {"hip": 0.30, "knee": -0.60, "abad": 0.0}
+LEG_SERVO = {"abad": dict(kp=500, kv=25, damping=6, fr=120),
+             "hip":  dict(kp=900, kv=45, damping=10, fr=160),
+             "knee": dict(kp=900, kv=45, damping=10, fr=160)}
+WHEEL_PEAK_TORQUE = 60.0   # N·m, TRON 1 peak
+
+
+def build_mjcf(physics: bool = False) -> str:
+    out_path = MJCF_PHYS_PATH if physics else MJCF_PATH
+    mj = ET.Element("mujoco", model="bravebot_physics" if physics else "bravebot")
+    ET.SubElement(mj, "compiler", meshdir=os.path.relpath(MESH_DIR, os.path.dirname(out_path)),
                   angle="radian", autolimits="true")
-    ET.SubElement(mj, "option", timestep="0.004", gravity="0 0 -9.81", integrator="implicitfast")
+    if physics:
+        ET.SubElement(mj, "option", timestep="0.002", gravity="0 0 -9.81",
+                      integrator="implicitfast", cone="elliptic", impratio="3")
+    else:
+        ET.SubElement(mj, "option", timestep="0.004", gravity="0 0 -9.81",
+                      integrator="implicitfast")
 
     visual = ET.SubElement(mj, "visual")
     ET.SubElement(visual, "global", offwidth="1920", offheight="1080", azimuth="130", elevation="-18")
@@ -115,14 +154,19 @@ def build_mjcf() -> str:
     ET.SubElement(base, "freejoint", name="root")
     ET.SubElement(base, "geom", type="mesh", mesh="m_base", rgba="0.82 0.84 0.88 1")
     ET.SubElement(base, "site", name="imu", pos="0 0 0", rgba="1 1 1 0.3")
-    ET.SubElement(base, "inertial", pos="0 0 -0.1", mass=str(LINK_MASS["base"]),
-                  diaginertia="0.25 0.25 0.18")
+    if physics:
+        _add_inertial(base, LINK_MASS["base"], "tron1/base_Link.stl")
+    else:
+        ET.SubElement(base, "inertial", pos="0 0 -0.1", mass=str(LINK_MASS["base"]),
+                      diaginertia="0.25 0.25 0.18")
 
     # BraveBot modification bodies (fixed to the base)
     for comp in R.COMPONENTS:
         body = ET.SubElement(base, "body", name=f"{comp.id}_link", pos=_v(comp.pos))
         rgba = SENSOR_RGBA[comp.sensor.modality] if comp.sensor else GROUP_RGBA[comp.group]
         ET.SubElement(body, "geom", type="mesh", mesh=f"m_{comp.id}", rgba=rgba)
+        if physics:
+            _add_inertial(body, COMP_MASS[comp.id], f"bravebot/{comp.id}.stl")
         if comp.sensor:
             # site frame: +x of the body is the sensor look axis (matches geometry)
             ET.SubElement(body, "site", name=f"s_{comp.id}", pos="0 0 0",
@@ -133,27 +177,63 @@ def build_mjcf() -> str:
     for j in R.LEG_JOINTS:
         parent_body = bodies[_canonical(j.parent)]
         b = ET.SubElement(parent_body, "body", name=f"{j.child}_link", pos=_v(j.origin))
-        jtype = "hinge"
-        attrs = {"name": j.name, "type": jtype, "axis": _v(j.axis), "pos": "0 0 0"}
+        link_key = _link_kind(j.child)
+        attrs = {"name": j.name, "type": "hinge", "axis": _v(j.axis), "pos": "0 0 0"}
         if j.type == "revolute":
             attrs["range"] = f"{j.lower} {j.upper}"
+            if physics:
+                attrs["damping"] = str(LEG_SERVO[link_key]["damping"])
         else:
             attrs["limited"] = "false"
+            if physics:
+                attrs["damping"] = "0.05"          # tiny wheel bearing friction
         ET.SubElement(b, "joint", **attrs)
-        link_key = _link_kind(j.child)
-        rgba = "0.30 0.32 0.36 1" if "wheel" in j.child else "0.62 0.66 0.72 1"
-        ET.SubElement(b, "geom", type="mesh", mesh=f"m_{_canonical_mesh(j.child)}",
-                      rgba=rgba, contype="1" if "wheel" in j.child else "0",
-                      conaffinity="1" if "wheel" in j.child else "0")
-        ET.SubElement(b, "inertial", pos="0 0 0", mass=str(LINK_MASS[link_key]),
-                      diaginertia="0.01 0.01 0.01")
+        is_wheel = "wheel" in j.child
+        rgba = "0.30 0.32 0.36 1" if is_wheel else "0.62 0.66 0.72 1"
+        gattrs = dict(type="mesh", mesh=f"m_{_canonical_mesh(j.child)}", rgba=rgba)
+        if is_wheel:
+            gattrs.update(contype="1", conaffinity="1", condim="4",
+                          friction="1.4 0.02 0.001", solref="0.008 1", solimp="0.95 0.99 0.001",
+                          priority="2")
+        ET.SubElement(b, "geom", **gattrs)
+        if physics:
+            _add_inertial(b, LINK_MASS[link_key],
+                          f"tron1/{R.TRON1_MESH[j.child]}.stl", min_dim=0.03)
+        else:
+            ET.SubElement(b, "inertial", pos="0 0 0", mass=str(LINK_MASS[link_key]),
+                          diaginertia="0.01 0.01 0.01")
         bodies[j.child] = b
 
-    # Velocity actuators on the wheels (used in physics mode)
+    # Sensors (physics mode) — clean state read for the balance controller
+    if physics:
+        sens = ET.SubElement(mj, "sensor")
+        ET.SubElement(sens, "framequat", name="base_quat", objtype="site", objname="imu")
+        ET.SubElement(sens, "framezaxis", name="base_zaxis", objtype="site", objname="imu")
+        ET.SubElement(sens, "gyro", name="base_gyro", site="imu")
+        ET.SubElement(sens, "velocimeter", name="base_vel", site="imu")
+        for side in ("L", "R"):
+            ET.SubElement(sens, "jointvel", name=f"wheel_{side}_w", joint=f"wheel_{side}")
+            ET.SubElement(sens, "jointpos", name=f"wheel_{side}_q", joint=f"wheel_{side}")
+
+    # Actuators
     act = ET.SubElement(mj, "actuator")
-    for side in ("L", "R"):
-        ET.SubElement(act, "velocity", name=f"wheel_{side}_vel", joint=f"wheel_{side}",
-                      kv="8", ctrlrange="-40 40")
+    if physics:
+        # legs: stiff position servos hold the stance; wheels: torque motors
+        for j in R.LEG_JOINTS:
+            if j.type != "revolute":
+                continue
+            s = LEG_SERVO[_link_kind(j.child)]
+            ET.SubElement(act, "position", name=f"{j.name}_pos", joint=j.name,
+                          kp=str(s["kp"]), kv=str(s["kv"]),
+                          forcerange=f"-{s['fr']} {s['fr']}")
+        for side in ("L", "R"):
+            ET.SubElement(act, "motor", name=f"wheel_{side}_mot", joint=f"wheel_{side}",
+                          gear="1", ctrlrange=f"-{WHEEL_PEAK_TORQUE} {WHEEL_PEAK_TORQUE}",
+                          forcerange=f"-{WHEEL_PEAK_TORQUE} {WHEEL_PEAK_TORQUE}")
+    else:
+        for side in ("L", "R"):
+            ET.SubElement(act, "velocity", name=f"wheel_{side}_vel", joint=f"wheel_{side}",
+                          kv="8", ctrlrange="-40 40")
 
     return _pretty(mj)
 
@@ -246,14 +326,18 @@ def _pretty(elem) -> str:
 
 
 def main():
-    print("1/3  generating component meshes ...")
+    print("1/4  generating component meshes ...")
     meshgen.build_all(verbose=False)
-    print("2/3  writing MJCF ...")
+    print("2/4  writing kinematic MJCF ...")
     os.makedirs(os.path.dirname(MJCF_PATH), exist_ok=True)
     with open(MJCF_PATH, "w") as f:
-        f.write(build_mjcf())
+        f.write(build_mjcf(physics=False))
     print(f"       -> {os.path.relpath(MJCF_PATH, ROOT)}")
-    print("3/3  writing URDF ...")
+    print("3/4  writing physics MJCF ...")
+    with open(MJCF_PHYS_PATH, "w") as f:
+        f.write(build_mjcf(physics=True))
+    print(f"       -> {os.path.relpath(MJCF_PHYS_PATH, ROOT)}")
+    print("4/4  writing URDF ...")
     os.makedirs(os.path.dirname(URDF_PATH), exist_ok=True)
     with open(URDF_PATH, "w") as f:
         f.write(build_urdf())
