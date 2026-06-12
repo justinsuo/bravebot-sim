@@ -40,14 +40,14 @@ from . import registry as R
 STANCE = {"abad": 0.0, "hip": 0.30, "knee": -0.60}
 
 
-# Default gains: auto-tuned (scripts/eval_balance.py --tune) for bravebot_physics.xml.
+# Default gains: calm/stable baseline (scripts/eval_balance.py --tune to retune).
 @dataclass
 class Gains:
     k_p: float = 372.0      # pitch proportional   (N·m / rad)
     k_d: float = 18.7       # pitch derivative     (N·m / (rad/s))
-    k_pv: float = 0.151     # velocity -> lean ref (rad / (m/s))
-    lean_max: float = 0.185  # max commanded lean  (rad)
-    k_yaw: float = 17.85    # yaw-rate tracking    (N·m / (rad/s))
+    k_pv: float = 0.16      # velocity -> lean ref (rad / (m/s))
+    lean_max: float = 0.20  # max commanded lean   (rad) — modest for control
+    k_yaw: float = 14.0     # yaw-rate tracking    (N·m / (rad/s))
     k_iv: float = 0.45      # velocity-error integral -> lean (station-keeping)
 
     # as_vector/from_vector cover the 5 tuned gains; k_iv is fixed (not tuned).
@@ -111,10 +111,10 @@ class BalanceController:
 
     # command envelope: a high-CoM single-axle wheeled biped tips if asked to
     # turn/accelerate too hard, so cap and slew-limit the commands.
-    MAX_V = 1.8          # m/s — top speed (robot balances fine at this)
-    MAX_W = 0.5          # rad/s ceiling (per-burst; see turn budget)
-    V_SLEW = 5.0         # m/s per second — snappy acceleration
-    W_SLEW = 5.0         # rad/s per second
+    MAX_V = 1.1          # m/s — controllable top speed
+    MAX_W = 0.45         # rad/s ceiling (per-burst; see turn budget)
+    V_SLEW = 2.5         # m/s per second — moderate, not jerky
+    W_SLEW = 3.0         # rad/s per second
     DT_CMD = 0.002       # control period
     # Proactive turn budgeting: with no roll actuation, the roll mode stays tiny
     # for ~130 deg of continuous turning and then diverges abruptly (too late for

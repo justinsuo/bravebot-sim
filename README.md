@@ -153,24 +153,24 @@ python scripts/eval_balance.py --regression   # assert it stays upright (guards 
 python scripts/render_physics_video.py        # balance -> drive -> shove-recovery MP4
 ```
 
-Tuned result: balances, **station-keeps** (a velocity integral cancels the
-CoM-ahead-of-axle creep), and drives responsively — **1.8 m/s top speed**,
-reaching 1.35 m/s in ~0.65 s — while recovering from a 120 N forward shove. The
-gains are auto-tuned against an agility objective (fast step tracking) *and* a
-disturbance/pitch-margin penalty, so it's snappy without getting twitchy
-(max pitch ~18°).
+Tuned result: balances with **pitch RMS ~2°**, **station-keeps** (a velocity
+integral cancels the CoM-ahead-of-axle creep), drives at a controllable
+**1.1 m/s**, and recovers from a 120 N shove. The whole body has real collision
+geometry, so when it does fall it lands *on* the floor (no clipping through).
 
-**Turning is physically limited.** The robot has no roll actuation (single wheel
-axle, legs fixed), so a *sustained* turn slowly winds up an uncontrolled roll
-mode that diverges after ~130° — exactly how a real high-CoM wheeled biped rolls
-over. The controller handles this with a **turn budget**: each turn burst is
-capped (~34°) and followed by a brief straight "cooldown" so roll settles, and
-the budget depletes faster at speed (centripetal `v·ω`). Net effect: balancing,
-station-keeping, straight driving, and waypoint-style brief turns are robust;
-continuous in-place spinning stutters but stays upright; a sustained *tight arc
-at speed* is intentionally throttled. (Full rigid-body **gait/RL** for the real
-TRON 1 — including active roll control — is a separate problem; here the legs
-stay at a fixed stance.)
+**Turning is physically limited — by design, not a bug.** The robot has no roll
+actuation (single wheel axle, fixed-stance legs), so a *sustained* turn winds up
+an uncontrolled roll mode that diverges after ~90–130° — exactly how a real
+high-CoM wheeled biped rolls over. Two things keep it safe:
+
+- a **turn budget** caps each turn burst and adds a straight "cooldown" so roll
+  settles (brief/waypoint turns and slow in-place spins stay upright);
+- the autonomous patrol **never U-turns** — it drives forward down the aisle and
+  *reverses* back, so on a straight route it makes essentially no large turns
+  (verified: 120 s / 7 laps upright, max roll 0.1°).
+
+(Active roll control via the leg ab/ad joints — which would unlock fast
+cornering — is left as future work, alongside full gait/RL for the real TRON 1.)
 
 The control approach was designed and adversarially reviewed via multi-agent
 workflows; the confirmed review findings (station-keeping, turn/roll limits,

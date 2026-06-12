@@ -31,9 +31,9 @@ from bravebot_sim.balance import BalanceController, Gains, settle_upright  # noq
 PHYS_MODEL = os.path.join(ROOT, "description", "mjcf", "bravebot_physics.xml")
 GAINS_PATH = os.path.join(ROOT, "bravebot_sim", "gains.json")
 
-# (t_start, v_cmd, omega_cmd) command schedule — agile: fast steps, high speeds
-SCHEDULE = [(0.0, 0.0, 0.0), (1.5, 1.5, 0.0), (4.0, 0.0, 0.0), (5.0, 1.5, 0.0),
-            (7.5, -0.8, 0.0), (9.0, 0.0, 0.6), (11.0, 1.2, 0.0), (13.5, 0.0, 0.0)]
+# (t_start, v_cmd, omega_cmd) command schedule — within the calm envelope
+SCHEDULE = [(0.0, 0.0, 0.0), (1.5, 1.0, 0.0), (4.0, 0.0, 0.0), (5.0, 1.0, 0.0),
+            (7.5, -0.7, 0.0), (9.0, 0.0, 0.45), (11.0, 0.9, 0.0), (13.5, 0.0, 0.0)]
 DURATION = 15.0
 SETTLE_IGNORE = 0.35   # s after a command change to ignore (rewards fast rise)
 

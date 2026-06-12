@@ -126,8 +126,16 @@ def build_mjcf(physics: bool = False) -> str:
     ET.SubElement(visual, "map", znear="0.01", zfar="50")
 
     default = ET.SubElement(mj, "default")
-    ET.SubElement(default, "geom", contype="0", conaffinity="0", group="2",
-                  density="500", friction="1 0.05 0.01")
+    if physics:
+        # Every robot geom collides with the floor (robot contype bit 2 meets the
+        # floor's conaffinity bit 1) but NOT with other robot geoms (no shared
+        # contype/conaffinity bit) — so the whole body is physically present and
+        # cannot fall through the ground, with self-collision filtered out.
+        ET.SubElement(default, "geom", contype="2", conaffinity="1", group="2",
+                      density="500", friction="1 0.05 0.01", margin="0.001")
+    else:
+        ET.SubElement(default, "geom", contype="0", conaffinity="0", group="2",
+                      density="500", friction="1 0.05 0.01")
     ET.SubElement(default, "site", size="0.012", rgba="1 1 0 1", group="3")
 
     asset = ET.SubElement(mj, "asset")
@@ -192,9 +200,11 @@ def build_mjcf(physics: bool = False) -> str:
         rgba = "0.30 0.32 0.36 1" if is_wheel else "0.62 0.66 0.72 1"
         gattrs = dict(type="mesh", mesh=f"m_{_canonical_mesh(j.child)}", rgba=rgba)
         if is_wheel:
-            gattrs.update(contype="1", conaffinity="1", condim="4",
+            gattrs.update(contype="2" if physics else "1", conaffinity="1", condim="4",
                           friction="1.4 0.02 0.001", solref="0.008 1", solimp="0.95 0.99 0.001",
                           priority="2")
+        elif not physics:
+            gattrs.update(contype="0", conaffinity="0")   # kinematic: no collision
         ET.SubElement(b, "geom", **gattrs)
         if physics:
             _add_inertial(b, LINK_MASS[link_key],

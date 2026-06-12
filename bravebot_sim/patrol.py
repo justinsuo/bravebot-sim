@@ -58,13 +58,15 @@ def diagnose(readings: list[SensorReading]) -> Alert | None:
 
 
 class PatrolController:
-    def __init__(self, bot: BraveBot, waypoints, reach=0.35,
-                 cruise=1.4, turn_gain=2.2):
+    def __init__(self, bot: BraveBot, waypoints, reach=0.4,
+                 cruise=0.85, turn_gain=1.2, turn_rate=0.35, align_tol=0.35):
         self.bot = bot
         self.waypoints = list(waypoints)
         self.reach = reach
         self.cruise = cruise
         self.turn_gain = turn_gain
+        self.turn_rate = turn_rate     # in-place turn speed (rad/s)
+        self.align_tol = align_tol     # heading error (rad) to turn in place vs drive
         self.idx = 0
         self.done = False
 
@@ -90,9 +92,20 @@ class PatrolController:
             dx, dy = tx - self.bot.x, ty - self.bot.y
             dist = math.hypot(dx, dy)
         heading_err = _wrap(math.atan2(dy, dx) - self.bot.yaw)
-        # slow down while turning hard
-        v = self.cruise * max(0.0, math.cos(heading_err))
-        self.bot.drive(v, self.turn_gain * heading_err)
+        rev_err = _wrap(heading_err - math.pi)   # heading error if we drive backward
+        # A single-axle balancer can't safely make large turns (no roll actuation),
+        # so never U-turn: if the waypoint is behind, REVERSE toward it. Only the
+        # nearer of forward/backward is used, so the robot turns at most ~90°, and
+        # on a straight aisle it just drives forward then back — no turning at all.
+        if abs(heading_err) <= abs(rev_err):
+            err, vdir = heading_err, 1.0
+        else:
+            err, vdir = rev_err, -1.0
+        if abs(err) > self.align_tol:
+            v, omega = 0.0, math.copysign(self.turn_rate, err)   # turn in place, gently
+        else:
+            v, omega = vdir * self.cruise * math.cos(err), self.turn_gain * err
+        self.bot.drive(v, omega)
 
 
 def _wrap(a: float) -> float:

@@ -9,7 +9,7 @@
     <map znear="0.01" zfar="50"/>
   </visual>
   <default>
-    <geom contype="0" conaffinity="0" group="2" density="500" friction="1 0.05 0.01"/>
+    <geom contype="2" conaffinity="1" group="2" density="500" friction="1 0.05 0.01" margin="0.001"/>
     <site size="0.012" rgba="1 1 0 1" group="3"/>
   </default>
   <asset>
@@ -144,7 +144,7 @@
             <inertial pos="0.0837301 0.0127499 -0.135624" mass="1.2000" diaginertia="0.01278 0.01801 0.00596"/>
             <body name="wheelL_link" pos="0.15 0.0435 -0.25981">
               <joint name="wheel_L" type="hinge" axis="0 1 0" pos="0 0 0" limited="false" damping="0.05"/>
-              <geom type="mesh" mesh="m_wheelL" rgba="0.30 0.32 0.36 1" contype="1" conaffinity="1" condim="4" friction="1.4 0.02 0.001" solref="0.008 1" solimp="0.95 0.99 0.001" priority="2"/>
+              <geom type="mesh" mesh="m_wheelL" rgba="0.30 0.32 0.36 1" contype="2" conaffinity="1" condim="4" friction="1.4 0.02 0.001" solref="0.008 1" solimp="0.95 0.99 0.001" priority="2"/>
               <inertial pos="0 0.0077 0" mass="1.1000" diaginertia="0.00640 0.01234 0.00639"/>
             </body>
           </body>
@@ -164,7 +164,7 @@
             <inertial pos="0.0837301 -0.01275 -0.135624" mass="1.2000" diaginertia="0.01278 0.01801 0.00596"/>
             <body name="wheelR_link" pos="0.15 -0.0435 -0.25981">
               <joint name="wheel_R" type="hinge" axis="0 1 0" pos="0 0 0" limited="false" damping="0.05"/>
-              <geom type="mesh" mesh="m_wheelR" rgba="0.30 0.32 0.36 1" contype="1" conaffinity="1" condim="4" friction="1.4 0.02 0.001" solref="0.008 1" solimp="0.95 0.99 0.001" priority="2"/>
+              <geom type="mesh" mesh="m_wheelR" rgba="0.30 0.32 0.36 1" contype="2" conaffinity="1" condim="4" friction="1.4 0.02 0.001" solref="0.008 1" solimp="0.95 0.99 0.001" priority="2"/>
               <inertial pos="0 -0.0077 0" mass="1.1000" diaginertia="0.00640 0.01234 0.00639"/>
             </body>
           </body>

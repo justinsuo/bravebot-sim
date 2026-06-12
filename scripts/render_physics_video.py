@@ -27,15 +27,14 @@ from bravebot_sim import PhysicsBraveBot, physics_scene_path  # noqa: E402
 # (t_start, v_cmd, omega_cmd, caption)
 SCHEDULE = [
     (0.0, 0.0, 0.0, "Balancing on two wheels under gravity"),
-    (2.0, 1.3, 0.0, "Driving forward (real torque control)"),
-    (5.0, 1.3, 0.0, "External shove -> recover while moving"),  # shove at 5.0
-    (7.5, 0.0, 0.0, "Station-keeping (no creep)"),
-    (9.0, 1.0, 0.3, "Steering"),
-    (11.0, 1.0, -0.3, "Steering back"),
-    (13.0, 0.0, 0.0, "Hold"),
+    (2.0, 1.0, 0.0, "Driving forward (real torque control)"),
+    (4.5, 1.0, 0.0, "External shove -> recover while moving"),  # shove at 4.5
+    (7.0, 0.0, 0.0, "Station-keeping (no creep)"),
+    (8.5, -1.0, 0.0, "Reversing"),
+    (11.5, 0.0, 0.0, "Hold"),
 ]
-SHOVE_T, SHOVE_N = 5.0, 95.0
-DURATION = 15.0
+SHOVE_T, SHOVE_N = 4.5, 90.0
+DURATION = 13.5
 
 
 def _cmd(t):
