@@ -20,6 +20,7 @@ import numpy as np
 
 from . import registry as R
 from .balance import BalanceController, Gains, settle_upright
+from .gait import Gait
 from .sim import scan_anomalies
 
 
@@ -35,6 +36,8 @@ class PhysicsBraveBot:
         self._timestep = self.model.opt.timestep
         self._v = 0.0
         self._w = 0.0
+        self.gait = Gait()
+        self.walking = False     # overlay the legged stepping gait
         self.reset_upright()
 
     # ---- pose / odometry (read from the free joint) ----
@@ -68,11 +71,21 @@ class PhysicsBraveBot:
     def drive(self, v: float, omega: float):
         self._v, self._w = float(v), float(omega)
 
+    def set_walking(self, on: bool):
+        self.walking = bool(on)
+        self.gait.active = bool(on)
+
     def step(self, dt: float):
         """Advance real dynamics by dt, running the 500 Hz balance loop."""
         n = max(1, int(round(dt / self._timestep)))
         for _ in range(n):
             self.ctrl.control(self._v, self._w)
+            if self.walking:
+                moving = abs(self._v) > 0.05 or abs(self._w) > 0.05
+                self.gait.advance(self._timestep, moving)
+                targets = self.gait.leg_targets()
+                for joint, aid in self.ctrl._leg_act.items():
+                    self.data.ctrl[aid] = targets[joint]
             mujoco.mj_step(self.model, self.data)
 
     def state(self):

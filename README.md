@@ -172,6 +172,34 @@ high-CoM wheeled biped rolls over. Two things keep it safe:
 (Active roll control via the leg ab/ad joints — which would unlock fast
 cornering — is left as future work, alongside full gait/RL for the real TRON 1.)
 
+## Legged walking (scripted) & learned locomotion (RL)
+
+```bash
+python scripts/view.py --walk     # balance-assisted legged stepping gait
+```
+
+A 2-legged robot is statically unstable the instant a foot leaves the ground,
+and lifting a wheel triggers the roll mode — so a *true* leg-driven walk needs a
+learned policy. Two tracks are provided:
+
+- **Scripted gait** ([`bravebot_sim/gait.py`](bravebot_sim/gait.py)): the wheel
+  balance keeps the robot upright while the legs run a visible alternating
+  stepping cycle on top — march in place, step forward/back, step-turn. Honest
+  scope: balance-assisted, runs today, no training. `python scripts/render_gait_video.py`.
+- **Learned locomotion** ([`bravebot_sim/rl/`](bravebot_sim/rl/)): a Gymnasium
+  env + PPO trainer that learns to coordinate the legs and wheels to track a
+  commanded `(vx, vy, yaw)` while upright — the real path to robust walking and
+  clean rotation, the same approach the TRON 1 uses. The env is verified
+  learnable (reward climbs); full convergence is a GPU job. See
+  [`bravebot_sim/rl/README.md`](bravebot_sim/rl/README.md).
+
+```bash
+pip install -r requirements-rl.txt
+python scripts/rl_train.py --steps 60000 --envs 6     # CPU sanity (reward rises)
+python scripts/rl_train.py --steps 5_000_000 --envs 16  # real run, on a GPU
+python scripts/rl_play.py --cmd 0.6 0 0 --video renders/rl_walk.mp4
+```
+
 The control approach was designed and adversarially reviewed via multi-agent
 workflows; the confirmed review findings (station-keeping, turn/roll limits,
 NaN-safety) are fixed in the controller.

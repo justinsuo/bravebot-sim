@@ -43,12 +43,14 @@ V_STEP, W_STEP = 0.3, 0.2     # per arrow press (gentle; commands slew to target
 
 
 class Session:
-    def __init__(self, bare: bool, physics: bool = False):
+    def __init__(self, bare: bool, physics: bool = False, walk: bool = False):
         self.bare = bare
-        self.physics = physics
-        if physics:
+        self.physics = physics or walk
+        if self.physics:
             from bravebot_sim import PhysicsBraveBot, physics_model_path, physics_scene_path
             self.bot = PhysicsBraveBot(physics_model_path() if bare else physics_scene_path())
+            if walk:
+                self.bot.set_walking(True)
         else:
             self.bot = BraveBot(model_path() if bare else scene_path())
             self.bot.x, self.bot.y = (0.0, 0.0) if bare else facility.DOCK
@@ -97,11 +99,12 @@ class Session:
                 print("  " + alert.render().replace("\n", "\n  "))
 
 
-def run(bare: bool, physics: bool):
+def run(bare: bool, physics: bool, walk: bool = False):
     import mujoco.viewer
-    sess = Session(bare, physics)
+    sess = Session(bare, physics, walk)
     dt = 0.02
-    banner = "PHYSICS mode — the robot balances on its wheels.\n" if physics else ""
+    banner = ("WALK mode — balance-assisted legged stepping gait.\n" if walk else
+              "PHYSICS mode — the robot balances on its wheels.\n" if physics else "")
     print(banner + (__doc__.split("Controls")[1] if "Controls" in __doc__ else ""))
     with mujoco.viewer.launch_passive(sess.bot.model, sess.bot.data,
                                       key_callback=sess.on_key) as viewer:
@@ -131,9 +134,10 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--bare", action="store_true", help="robot only, no facility")
     ap.add_argument("--physics", action="store_true", help="real rigid-body dynamics + balance")
+    ap.add_argument("--walk", action="store_true", help="balance-assisted legged stepping gait")
     ap.add_argument("--check", action="store_true", help="headless self-test")
     args = ap.parse_args()
     if args.check:
-        check(args.physics)
+        check(args.physics or args.walk)
     else:
-        run(args.bare, args.physics)
+        run(args.bare, args.physics, args.walk)

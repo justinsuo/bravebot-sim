@@ -4,3 +4,7 @@ __pycache__/
 renders/_*.png
 renders/patrol/
 .DS_Store
+bravebot_sim/rl/policy.zip
+bravebot_sim/rl/policy.onnx
+renders/_*.png
+renders/gait.mp4
