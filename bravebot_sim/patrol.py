@@ -59,7 +59,7 @@ def diagnose(readings: list[SensorReading]) -> Alert | None:
 
 class PatrolController:
     def __init__(self, bot: BraveBot, waypoints, reach=0.35,
-                 cruise=1.1, turn_gain=2.2):
+                 cruise=1.4, turn_gain=2.2):
         self.bot = bot
         self.waypoints = list(waypoints)
         self.reach = reach

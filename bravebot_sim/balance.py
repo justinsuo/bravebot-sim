@@ -111,10 +111,10 @@ class BalanceController:
 
     # command envelope: a high-CoM single-axle wheeled biped tips if asked to
     # turn/accelerate too hard, so cap and slew-limit the commands.
-    MAX_V = 1.0          # m/s
-    MAX_W = 0.5          # rad/s ceiling
-    V_SLEW = 1.5         # m/s per second
-    W_SLEW = 2.0         # rad/s per second
+    MAX_V = 1.8          # m/s — top speed (robot balances fine at this)
+    MAX_W = 0.5          # rad/s ceiling (per-burst; see turn budget)
+    V_SLEW = 5.0         # m/s per second — snappy acceleration
+    W_SLEW = 5.0         # rad/s per second
     DT_CMD = 0.002       # control period
     # Proactive turn budgeting: with no roll actuation, the roll mode stays tiny
     # for ~130 deg of continuous turning and then diverges abruptly (too late for

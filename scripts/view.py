@@ -39,7 +39,7 @@ from bravebot_sim import (BraveBot, PatrolController, diagnose,  # noqa: E402
 # GLFW key codes — arrows + enter are the only keys the MuJoCo viewer leaves free
 RIGHT, LEFT, DOWN, UP = 262, 263, 264, 265
 ENTER = 257
-V_STEP, W_STEP = 0.25, 0.25
+V_STEP, W_STEP = 0.6, 0.35   # per arrow press (commands slew smoothly to target)
 
 
 class Session:

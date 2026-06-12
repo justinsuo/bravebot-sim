@@ -153,9 +153,12 @@ python scripts/eval_balance.py --regression   # assert it stays upright (guards 
 python scripts/render_physics_video.py        # balance -> drive -> shove-recovery MP4
 ```
 
-Tuned result: balances with **pitch RMS ~2°**, **station-keeps** (a velocity
-integral cancels the CoM-ahead-of-axle creep), drives, and recovers from a 120 N
-external shove.
+Tuned result: balances, **station-keeps** (a velocity integral cancels the
+CoM-ahead-of-axle creep), and drives responsively — **1.8 m/s top speed**,
+reaching 1.35 m/s in ~0.65 s — while recovering from a 120 N forward shove. The
+gains are auto-tuned against an agility objective (fast step tracking) *and* a
+disturbance/pitch-margin penalty, so it's snappy without getting twitchy
+(max pitch ~18°).
 
 **Turning is physically limited.** The robot has no roll actuation (single wheel
 axle, legs fixed), so a *sustained* turn slowly winds up an uncontrolled roll

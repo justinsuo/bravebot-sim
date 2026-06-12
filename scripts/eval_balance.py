@@ -31,18 +31,19 @@ from bravebot_sim.balance import BalanceController, Gains, settle_upright  # noq
 PHYS_MODEL = os.path.join(ROOT, "description", "mjcf", "bravebot_physics.xml")
 GAINS_PATH = os.path.join(ROOT, "bravebot_sim", "gains.json")
 
-# (t_start, v_cmd, omega_cmd) command schedule
-SCHEDULE = [(0.0, 0.0, 0.0), (3.0, 0.8, 0.0), (7.0, 0.0, 0.0),
-            (9.0, 0.0, 0.7), (11.5, 0.8, 0.0)]
-DURATION = 14.0
+# (t_start, v_cmd, omega_cmd) command schedule — agile: fast steps, high speeds
+SCHEDULE = [(0.0, 0.0, 0.0), (1.5, 1.5, 0.0), (4.0, 0.0, 0.0), (5.0, 1.5, 0.0),
+            (7.5, -0.8, 0.0), (9.0, 0.0, 0.6), (11.0, 1.2, 0.0), (13.5, 0.0, 0.0)]
+DURATION = 15.0
+SETTLE_IGNORE = 0.35   # s after a command change to ignore (rewards fast rise)
 
 
 def _cmd(t):
-    v, w = 0.0, 0.0
+    v, w, ts0 = 0.0, 0.0, 0.0
     for ts, vv, ww in SCHEDULE:
         if t >= ts:
-            v, w = vv, ww
-    return v, w
+            v, w, ts0 = vv, ww, ts
+    return v, w, t - ts0   # also return time-into-segment
 
 
 def evaluate(gains: Gains, duration: float = DURATION, return_trace: bool = False):
@@ -55,22 +56,32 @@ def evaluate(gains: Gains, duration: float = DURATION, return_trace: bool = Fals
     n = int(duration / dt)
     upright_until = duration
     pitch_sq = 0.0
+    max_pitch = 0.0
     verr_sq = verr_n = 0
     werr_sq = werr_n = 0
     fell = False
     trace = []
+    torso = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_BODY, "torso_link")
 
     for k in range(n):
         t = k * dt
-        v_cmd, w_cmd = _cmd(t)
+        v_cmd, w_cmd, t_seg = _cmd(t)
         s = ctrl.control(v_cmd, w_cmd)
+        # disturbance test: shove forward at 6.0 s and laterally at 12.0 s, so the
+        # tuner must keep enough margin to reject pushes (not just go fast).
+        d.xfrc_applied[:] = 0
+        if 6.0 <= t < 6.12:
+            d.xfrc_applied[torso][0] = 120.0
+        elif 12.0 <= t < 12.12:
+            d.xfrc_applied[torso][1] = 110.0
         mujoco.mj_step(m, d)
         if not np.isfinite(d.qpos).all():
             fell = True
             upright_until = t
             break
         pitch_sq += s.pitch ** 2
-        settled = (t % 2.0) > 0.7    # ignore the first 0.7 s after each command change
+        max_pitch = max(max_pitch, abs(s.pitch))
+        settled = t_seg > SETTLE_IGNORE   # only ignore a short rise window
         if settled and abs(v_cmd) > 0.1:
             verr_sq += (s.v - v_cmd) ** 2
             verr_n += 1
@@ -88,10 +99,15 @@ def evaluate(gains: Gains, duration: float = DURATION, return_trace: bool = Fals
     vel_rmse = math.sqrt(verr_sq / max(1, verr_n))
     yaw_rmse = math.sqrt(werr_sq / max(1, werr_n))
     dist = math.hypot(d.qpos[0], d.qpos[1])
-    cost = (duration - upright_until) * 6.0 + vel_rmse * 3.0 + yaw_rmse * 2.0 + pitch_rms * 1.5
+    # responsive AND robust: reward velocity tracking, penalize falling and any
+    # large pitch excursion (margin) beyond ~17 deg.
+    pitch_excess = max(0.0, max_pitch - 0.30)
+    cost = ((duration - upright_until) * 8.0 + vel_rmse * 5.0 + yaw_rmse * 2.0
+            + pitch_rms * 1.0 + pitch_excess * 12.0)
     metrics = dict(cost=cost, upright_until=round(upright_until, 2), fell=fell,
-                   pitch_rms=round(pitch_rms, 4), vel_rmse=round(vel_rmse, 4),
-                   yaw_rmse=round(yaw_rmse, 4), distance=round(dist, 3))
+                   pitch_rms=round(pitch_rms, 4), max_pitch=round(math.degrees(max_pitch), 1),
+                   vel_rmse=round(vel_rmse, 4), yaw_rmse=round(yaw_rmse, 4),
+                   distance=round(dist, 3))
     return (metrics, trace) if return_trace else metrics
 
 
@@ -101,8 +117,8 @@ def tune(iters: int = 120, seed: Gains | None = None):
     best_v = best.as_vector()
     best_m = evaluate(best)
     print(f"seed gains {np.round(best_v,3)} -> {best_m}")
-    lo = np.array([50, 5, 0.05, 0.12, 1.0])
-    hi = np.array([1200, 150, 1.2, 0.5, 30.0])
+    lo = np.array([50, 5, 0.05, 0.12, 8.0])
+    hi = np.array([1200, 150, 0.9, 0.32, 16.0])   # cap lean_max (margin) and k_yaw (spin)
 
     radius = 0.6
     for i in range(iters):
