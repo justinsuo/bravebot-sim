@@ -48,7 +48,9 @@ class Gains:
     k_pv: float = 0.151     # velocity -> lean ref (rad / (m/s))
     lean_max: float = 0.185  # max commanded lean  (rad)
     k_yaw: float = 17.85    # yaw-rate tracking    (N·m / (rad/s))
+    k_iv: float = 0.45      # velocity-error integral -> lean (station-keeping)
 
+    # as_vector/from_vector cover the 5 tuned gains; k_iv is fixed (not tuned).
     def as_vector(self) -> np.ndarray:
         return np.array([self.k_p, self.k_d, self.k_pv, self.lean_max, self.k_yaw])
 
@@ -76,6 +78,7 @@ class State:
     v: float
     yaw_rate: float
     roll: float
+    roll_rate: float
     height: float
 
     @property
@@ -100,16 +103,29 @@ class BalanceController:
         self._tau_clip = float(model.actuator_ctrlrange[self._wL, 1])
         self._v_cmd = 0.0
         self._w_cmd = 0.0
+        self._v_int = 0.0      # velocity-error integral (station-keeping)
+        self._turn_used = 0.0  # cumulative-turn budget consumed
+        self._turn_locked = False
+        self._cooldown = 0     # steps of mandatory straight time remaining
         self.hold_stance()
 
-    # command envelope: a high-CoM wheeled biped tips if asked to turn/accelerate
-    # too hard (differential yaw torque steals from the balance budget), so cap
-    # and slew-limit the commands.
+    # command envelope: a high-CoM single-axle wheeled biped tips if asked to
+    # turn/accelerate too hard, so cap and slew-limit the commands.
     MAX_V = 1.0          # m/s
-    MAX_W = 0.6          # rad/s — beyond this the robot tips during the turn
+    MAX_W = 0.5          # rad/s ceiling
     V_SLEW = 1.5         # m/s per second
     W_SLEW = 2.0         # rad/s per second
     DT_CMD = 0.002       # control period
+    # Proactive turn budgeting: with no roll actuation, the roll mode stays tiny
+    # for ~130 deg of continuous turning and then diverges abruptly (too late for
+    # any reactive limiter). So spend a budget while turning and recover it while
+    # going straight; pause turning well before the divergence, with hysteresis,
+    # so the roll mode settles. Brief turns (waypoints) are unaffected.
+    TURN_BUDGET = 0.6        # rad of cumulative turn per burst (~34 deg)
+    TURN_RECOVER = 0.6       # rad/s budget recovery while going straight
+    TURN_COOLDOWN_S = 2.5    # mandatory straight time after a burst (roll settles)
+    ROLL_SETTLED = 0.015     # rad — also require roll this small before turning again
+    ROLLRATE_SETTLED = 0.04  # rad/s
 
     # ---- sensor read ----
     def _sensor(self, name: str) -> np.ndarray:
@@ -125,7 +141,14 @@ class BalanceController:
         roll = math.asin(float(np.clip(-za[1], -1, 1)))
         height = float(self.d.xpos[self._imu_body][2])
         return State(pitch=pitch, pitch_rate=float(gyro[1]), v=float(vel[0]),
-                     yaw_rate=float(gyro[2]), roll=roll, height=height)
+                     yaw_rate=float(gyro[2]), roll=roll, roll_rate=float(gyro[0]),
+                     height=height)
+
+    def reset(self):
+        """Clear command-shaping and integral state (call when teleporting)."""
+        self._v_cmd = self._w_cmd = self._v_int = self._turn_used = 0.0
+        self._turn_locked = False
+        self._cooldown = 0
 
     # ---- leg stance ----
     def hold_stance(self, stance: dict | None = None):
@@ -135,9 +158,30 @@ class BalanceController:
             self.d.ctrl[aid] = st[key]
 
     # ---- control ----
-    def _shape_command(self, v_cmd: float, omega_cmd: float):
-        v_t = float(np.clip(v_cmd, -self.MAX_V, self.MAX_V))
-        w_t = float(np.clip(omega_cmd, -self.MAX_W, self.MAX_W))
+    @staticmethod
+    def _finite(x: float) -> float:
+        return x if math.isfinite(x) else 0.0
+
+    def _shape_command(self, v_cmd: float, omega_cmd: float, roll: float, roll_rate: float):
+        v_t = float(np.clip(self._finite(v_cmd), -self.MAX_V, self.MAX_V))
+        w_t = float(np.clip(self._finite(omega_cmd), -self.MAX_W, self.MAX_W))
+        # turn budget: each burst is capped, then a mandatory cooldown (straight
+        # driving) lets the roll mode settle before turning is allowed again.
+        if abs(w_t) > 0.02 and not self._turn_locked:
+            # deplete faster while driving — a sustained arc rolls over via the
+            # centripetal term (~ v·omega), so spend budget proportional to speed.
+            self._turn_used += abs(w_t) * (1.0 + 2.5 * abs(self._v_cmd)) * self.DT_CMD
+            if self._turn_used >= self.TURN_BUDGET:
+                self._turn_locked = True
+                self._cooldown = int(self.TURN_COOLDOWN_S / self.DT_CMD)
+        else:
+            self._turn_used = max(0.0, self._turn_used - self.TURN_RECOVER * self.DT_CMD)
+        if self._turn_locked:
+            self._cooldown -= 1
+            if self._cooldown <= 0 and self._turn_used <= 0.0 \
+                    and abs(roll) < self.ROLL_SETTLED and abs(roll_rate) < self.ROLLRATE_SETTLED:
+                self._turn_locked = False
+            w_t = 0.0
         dv = self.V_SLEW * self.DT_CMD
         dw = self.W_SLEW * self.DT_CMD
         self._v_cmd += float(np.clip(v_t - self._v_cmd, -dv, dv))
@@ -147,13 +191,19 @@ class BalanceController:
     def control(self, v_cmd: float = 0.0, omega_cmd: float = 0.0) -> State:
         g = self.gains
         s = self.read_state()
-        v_cmd, omega_cmd = self._shape_command(v_cmd, omega_cmd)
-        pitch_ref = float(np.clip(g.k_pv * (v_cmd - s.v), -g.lean_max, g.lean_max))
+        v_cmd, omega_cmd = self._shape_command(v_cmd, omega_cmd, s.roll, s.roll_rate)
+        # velocity loop with an anti-windup integral so it actually station-keeps
+        # (the CoM sits ahead of the axle, needing a steady lean that pure-P can
+        # only hold via a permanent velocity error -> forward creep).
+        v_err = v_cmd - s.v
+        self._v_int = float(np.clip(self._v_int + g.k_iv * v_err * self.DT_CMD,
+                                    -g.lean_max, g.lean_max))
+        pitch_ref = float(np.clip(g.k_pv * v_err + self._v_int, -g.lean_max, g.lean_max))
         tau_bal = +(g.k_p * (s.pitch - pitch_ref) + g.k_d * s.pitch_rate)
         tau_turn = g.k_yaw * (omega_cmd - s.yaw_rate)
         c = self._tau_clip
-        self.d.ctrl[self._wL] = float(np.clip(tau_bal - tau_turn, -c, c))
-        self.d.ctrl[self._wR] = float(np.clip(tau_bal + tau_turn, -c, c))
+        self.d.ctrl[self._wL] = self._finite(float(np.clip(tau_bal - tau_turn, -c, c)))
+        self.d.ctrl[self._wR] = self._finite(float(np.clip(tau_bal + tau_turn, -c, c)))
         self.hold_stance()
         return s
 
@@ -193,5 +243,6 @@ def settle_upright(model, data, controller: "BalanceController", clearance: floa
         adr = model.jnt_qposadr[mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, j.name)]
         key = "abad" if "abad" in j.name else "hip" if "hip" in j.name else "knee"
         data.qpos[adr] = STANCE[key]
+    controller.reset()
     controller.hold_stance()
     mujoco.mj_forward(model, data)

@@ -59,12 +59,18 @@ python scripts/view.py --bare        # robot only, empty floor
 > macOS note: the live viewer needs `mjpython scripts/view.py` (MuJoCo requires
 > its own interpreter for the GUI). Headless scripts use plain `python`.
 
-| Key | Action | Key | Action |
-|-----|--------|-----|--------|
-| `W` / `S` | drive forward / back | `A` / `D` | turn left / right |
-| `Q` / `E` | stance lower / taller | `X` | full stop |
-| `SPACE` | scan → print risk-scored alerts | `P` | toggle autonomous patrol |
-| `R` | reset to charging dock | `O` | print odometry |
+By default it runs an autonomous balancing patrol — just watch and orbit with
+the mouse. The **arrow keys** take manual control:
+
+| Key | Action |
+|-----|--------|
+| `↑` / `↓` | drive forward / back |
+| `←` / `→` | turn left / right |
+| `Enter` | resume autonomous patrol (and stop) |
+
+Anomalies are scanned and printed continuously as the robot sees them. (Robot
+control uses the arrow keys because the MuJoCo viewer binds every *letter* key
+to a visualization toggle — `W`=wireframe, `S`=shadow, and so on.)
 
 ### Headless patrol demo (no window)
 
@@ -147,11 +153,25 @@ python scripts/eval_balance.py --regression   # assert it stays upright (guards 
 python scripts/render_physics_video.py        # balance -> drive -> shove-recovery MP4
 ```
 
-Tuned result: stays upright through stand → drive → turn → drive with **pitch
-RMS ~2°**, and recovers from a 120 N external shove. A high-CoM wheeled biped
-tips if asked to turn faster than ~0.6 rad/s, so the controller caps and
-slew-limits the velocity/yaw commands. (Full rigid-body **gait/RL** for the real
-TRON 1 is a separate problem; here the legs stay at a fixed stance.)
+Tuned result: balances with **pitch RMS ~2°**, **station-keeps** (a velocity
+integral cancels the CoM-ahead-of-axle creep), drives, and recovers from a 120 N
+external shove.
+
+**Turning is physically limited.** The robot has no roll actuation (single wheel
+axle, legs fixed), so a *sustained* turn slowly winds up an uncontrolled roll
+mode that diverges after ~130° — exactly how a real high-CoM wheeled biped rolls
+over. The controller handles this with a **turn budget**: each turn burst is
+capped (~34°) and followed by a brief straight "cooldown" so roll settles, and
+the budget depletes faster at speed (centripetal `v·ω`). Net effect: balancing,
+station-keeping, straight driving, and waypoint-style brief turns are robust;
+continuous in-place spinning stutters but stays upright; a sustained *tight arc
+at speed* is intentionally throttled. (Full rigid-body **gait/RL** for the real
+TRON 1 — including active roll control — is a separate problem; here the legs
+stay at a fixed stance.)
+
+The control approach was designed and adversarially reviewed via multi-agent
+workflows; the confirmed review findings (station-keeping, turn/roll limits,
+NaN-safety) are fixed in the controller.
 
 ---
 

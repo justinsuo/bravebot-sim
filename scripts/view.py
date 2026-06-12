@@ -2,8 +2,8 @@
 """
 Interactive BraveBot viewer (MuJoCo passive viewer).
 
-Drive the robot around the data-center scene, change stance, run an autonomous
-patrol, and scan for anomalies with the four-sensor stack.
+By default the robot runs an autonomous balancing patrol — just watch (and orbit
+the camera with the mouse). The ARROW KEYS take manual control.
 
     python scripts/view.py                 # kinematic robot in the facility
     python scripts/view.py --physics       # REAL physics: it balances on its wheels
@@ -11,11 +11,14 @@ patrol, and scan for anomalies with the four-sensor stack.
     python scripts/view.py --check         # headless self-test (no window)
 
 Controls (focus the MuJoCo window):
-    W / S    drive forward / back            A / D   turn left / right
-    X        full stop                       Q / E   stance lower / taller
-    SPACE    scan now -> print alerts        P       toggle autonomous patrol
-    R        reset to the charging dock       O       print robot odometry
-Mouse orbits/zooms the camera as usual.
+    Up / Down     drive forward / back        Left / Right   turn
+    Enter         resume autonomous patrol (and stop)
+
+Anomalies are scanned continuously and printed as the robot sees them.
+
+NOTE: the MuJoCo viewer binds every LETTER key to a visualization toggle
+(W=wireframe, S=shadow, ...), so robot control uses the arrow keys, which the
+viewer leaves free. macOS: launch with `mjpython scripts/view.py ...`.
 """
 
 from __future__ import annotations
@@ -32,12 +35,11 @@ sys.path.insert(0, ROOT)
 
 from bravebot_sim import (BraveBot, PatrolController, diagnose,  # noqa: E402
                           model_path, scene_path, facility)
-from bravebot_sim.sim import STANCES  # noqa: E402
 
-# GLFW key codes
-W, A, S, D, X, Q, E, P, R, O = 87, 65, 83, 68, 88, 81, 69, 80, 82, 79
-SPACE = 32
-STANCE_ORDER = ["low", "nominal", "tall"]
+# GLFW key codes — arrows + enter are the only keys the MuJoCo viewer leaves free
+RIGHT, LEFT, DOWN, UP = 262, 263, 264, 265
+ENTER = 257
+V_STEP, W_STEP = 0.25, 0.25
 
 
 class Session:
@@ -45,89 +47,62 @@ class Session:
         self.bare = bare
         self.physics = physics
         if physics:
-            from bravebot_sim import (PhysicsBraveBot, physics_model_path,
-                                      physics_scene_path)
+            from bravebot_sim import PhysicsBraveBot, physics_model_path, physics_scene_path
             self.bot = PhysicsBraveBot(physics_model_path() if bare else physics_scene_path())
         else:
             self.bot = BraveBot(model_path() if bare else scene_path())
             self.bot.x, self.bot.y = (0.0, 0.0) if bare else facility.DOCK
             self.bot.apply()
         self.ctrl = PatrolController(self.bot, facility.WAYPOINTS)
-        self.autopilot = False
+        self.autopilot = not bare        # patrol by default in the facility
         self.v_cmd = 0.0
         self.omega_cmd = 0.0
-        self.stance_i = STANCE_ORDER.index("nominal")
+        self._alerted: set[str] = set()
 
+    # ---- input ----
     def on_key(self, keycode: int):
-        b = self.bot
-        if keycode == W:
-            self.v_cmd = min(b.MAX_V, self.v_cmd + 0.3); self.autopilot = False
-        elif keycode == S:
-            self.v_cmd = max(-b.MAX_V, self.v_cmd - 0.3); self.autopilot = False
-        elif keycode == A:
-            self.omega_cmd = min(b.MAX_OMEGA, self.omega_cmd + 0.25); self.autopilot = False
-        elif keycode == D:
-            self.omega_cmd = max(-b.MAX_OMEGA, self.omega_cmd - 0.25); self.autopilot = False
-        elif keycode == X:
-            self.v_cmd = self.omega_cmd = 0.0; self.autopilot = False
-        elif keycode in (Q, E):
-            if self.physics:
-                print("stance is fixed in physics mode (legs held by servos)")
-            else:
-                self.stance_i = max(0, min(len(STANCE_ORDER) - 1,
-                                           self.stance_i + (1 if keycode == E else -1)))
-                b.set_stance(STANCE_ORDER[self.stance_i])
-                print(f"stance -> {STANCE_ORDER[self.stance_i]}")
-        elif keycode == SPACE:
-            self._scan()
-        elif keycode == P:
-            self.autopilot = not self.autopilot
-            print(f"autopilot {'ON — patrolling route' if self.autopilot else 'OFF'}")
-            if self.autopilot:
-                self.ctrl = PatrolController(self.bot, facility.WAYPOINTS)
-        elif keycode == R:
-            self.v_cmd = self.omega_cmd = 0.0; self.autopilot = False
-            if self.physics:
-                b.reset_upright(); print("reset (upright)")
-            else:
-                b.x, b.y, b.yaw = (*facility.DOCK, 0.0)
-                b.apply(); print("reset to dock")
-        elif keycode == O:
-            v = b.state().v if self.physics else b.v
-            extra = f"pitch={math.degrees(b.state().pitch):+.1f}deg" if self.physics else f"stance={b.stance}"
-            print(f"odom  x={b.x:+.2f} y={b.y:+.2f} yaw={math.degrees(b.yaw):+.0f}deg "
-                  f"v={v:+.2f} {extra}")
+        if keycode == UP:
+            self.v_cmd = min(self.bot.MAX_V, self.v_cmd + V_STEP); self.autopilot = False
+        elif keycode == DOWN:
+            self.v_cmd = max(-self.bot.MAX_V, self.v_cmd - V_STEP); self.autopilot = False
+        elif keycode == LEFT:
+            self.omega_cmd = min(self.bot.MAX_OMEGA, self.omega_cmd + W_STEP); self.autopilot = False
+        elif keycode == RIGHT:
+            self.omega_cmd = max(-self.bot.MAX_OMEGA, self.omega_cmd - W_STEP); self.autopilot = False
+        elif keycode == ENTER:
+            self.v_cmd = self.omega_cmd = 0.0
+            self.autopilot = not self.bare
+            self.ctrl = PatrolController(self.bot, facility.WAYPOINTS)
+            print("resumed autonomous patrol" if self.autopilot else "manual hold")
 
-    def _scan(self):
-        readings = self.bot.scan(facility.ANOMALIES)
-        if not readings:
-            print("scan: nothing in sensor range / FOV")
-            return
-        print(f"\nscan @ x={self.bot.x:.1f} y={self.bot.y:.1f}: "
-              f"{len(readings)} reading(s)")
-        for r in readings:
-            print(f"  {r.modality:8s} {r.confidence:4.0%}  {r.target}  ({r.distance:.1f} m)")
-        alert = diagnose(readings)
-        if alert and alert.confidence > 0.45:
-            print("  --\n  " + alert.render().replace("\n", "\n  "))
-
+    # ---- loop ----
     def tick(self, dt: float):
         if self.autopilot:
             self.ctrl.update()
             if self.ctrl.done:
-                self.autopilot = False
-                print("patrol complete")
+                self.ctrl = PatrolController(self.bot, facility.WAYPOINTS)   # loop the route
         else:
             self.bot.drive(self.v_cmd, self.omega_cmd)
         self.bot.step(dt)
+        self._auto_scan()
+
+    def _auto_scan(self):
+        if self.bare:
+            return
+        for r in self.bot.scan(facility.ANOMALIES):
+            if r.confidence > 0.5 and r.target not in self._alerted:
+                self._alerted.add(r.target)
+                alert = diagnose([r])
+                print(f"\n[scan] {r.modality} array detected:")
+                print("  " + alert.render().replace("\n", "\n  "))
 
 
 def run(bare: bool, physics: bool):
     import mujoco.viewer
     sess = Session(bare, physics)
     dt = 0.02
-    print(("PHYSICS mode — the robot balances on its wheels.\n" if physics else "")
-          + (__doc__.split("Controls")[1] if "Controls" in __doc__ else ""))
+    banner = "PHYSICS mode — the robot balances on its wheels.\n" if physics else ""
+    print(banner + (__doc__.split("Controls")[1] if "Controls" in __doc__ else ""))
     with mujoco.viewer.launch_passive(sess.bot.model, sess.bot.data,
                                       key_callback=sess.on_key) as viewer:
         while viewer.is_running():
@@ -140,14 +115,16 @@ def run(bare: bool, physics: bool):
 def check(physics: bool = False):
     """Headless validation of the control loop — opens no window."""
     sess = Session(bare=False, physics=physics)
-    for code in (W, W, A, SPACE, P):
+    for _ in range(600):           # ~12 s of autonomous patrol
+        sess.tick(0.02)
+    for code in (UP, UP, LEFT, ENTER):   # exercise manual + resume
         sess.on_key(code)
-    for _ in range(400):
+    for _ in range(150):
         sess.tick(0.02)
     upright = (not sess.bot.fell) if physics else True
     print(f"check OK ({'physics' if physics else 'kinematic'}): "
-          f"x={sess.bot.x:.2f} y={sess.bot.y:.2f}, patrol idx={sess.ctrl.idx}, "
-          f"upright={upright}")
+          f"x={sess.bot.x:.2f} y={sess.bot.y:.2f} upright={upright} "
+          f"alerts={len(sess._alerted)}")
 
 
 if __name__ == "__main__":

@@ -337,11 +337,17 @@ def main():
     with open(MJCF_PHYS_PATH, "w") as f:
         f.write(build_mjcf(physics=True))
     print(f"       -> {os.path.relpath(MJCF_PHYS_PATH, ROOT)}")
-    print("4/4  writing URDF ...")
+    print("4/5  writing URDF ...")
     os.makedirs(os.path.dirname(URDF_PATH), exist_ok=True)
     with open(URDF_PATH, "w") as f:
         f.write(build_urdf())
     print(f"       -> {os.path.relpath(URDF_PATH, ROOT)}")
+    print("5/5  regenerating facility scenes ...")
+    from bravebot_sim import facility
+    facility.build_scene_xml(facility.SCENE_PATH)
+    facility.build_scene_xml(facility.SCENE_PHYS_PATH, robot="bravebot_physics.xml")
+    print(f"       -> {os.path.relpath(facility.SCENE_PATH, ROOT)}, "
+          f"{os.path.relpath(facility.SCENE_PHYS_PATH, ROOT)}")
     print(f"base standing height: {BASE_Z:.4f} m")
 
 
