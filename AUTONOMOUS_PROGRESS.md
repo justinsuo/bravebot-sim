@@ -31,6 +31,14 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 22: repo-state audit + cleanup (delivered state is tidy). Verified: training idle,
+  all README demo links resolve, tests 10/10, both policies intact. Fixed churn: tracked
+  deployment onnx now correct (policy.onnx==champion, policy_heading.onnx==shipped v1);
+  gitignored progress*.csv + policy_heading_best.onnx and untracked progress.csv; .zip /
+  __pycache__ / renders/_*.png correctly ignored. git status now fully clean; tracked rl/
+  artifacts are just the .onnx policy zoo (champion, drhardened, heading, v2/v3/v4/v5) +
+  README. Project is in a clean, complete, well-documented final state — substantive +
+  exploratory work exhausted (refine plateaued, slope-DR reverted as a negative result).
 - cycle 21: steeper-slope experiment CONCLUDED -> REVERTED (kept the bar honest). The
   ±4.6°/120N heading run finished; fair head-to-head under the STEEPER regime: v1
   (±2.9°-trained) clean 1721 / steepDR 1680 / combined 3401 BEAT the harder-DR policy
