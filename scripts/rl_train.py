@@ -70,6 +70,8 @@ def main():
     ap.add_argument("--save-every", type=int, default=500_000)
     ap.add_argument("--resume", action="store_true")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--heading", action="store_true",
+                    help="train the heading-aware policy on its own track (42-d obs)")
     args = ap.parse_args()
 
     import numpy as np
@@ -78,7 +80,18 @@ def main():
     from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
     from stable_baselines3.common.monitor import Monitor
     from stable_baselines3.common.callbacks import BaseCallback
-    from bravebot_sim.rl.env import BraveBotLocomotionEnv
+
+    # heading-aware track ships to separate files so the 40-d champion is untouched.
+    if args.heading:
+        from bravebot_sim.rl.heading_env import HeadingAwareEnv as EnvCls
+        ZIP = os.path.join(OUT_DIR, "policy_heading")
+        ONNX, BEST = ZIP + ".onnx", os.path.join(OUT_DIR, "policy_heading_best")
+        BEST_ONNX, CSV = BEST + ".onnx", os.path.join(OUT_DIR, "progress_heading.csv")
+    else:
+        from bravebot_sim.rl.env import BraveBotLocomotionEnv as EnvCls
+        ZIP = os.path.join(OUT_DIR, "policy")
+        ONNX, BEST = ZIP + ".onnx", os.path.join(OUT_DIR, "policy_best")
+        BEST_ONNX, CSV = BEST + ".onnx", os.path.join(OUT_DIR, "progress.csv")
 
     os.makedirs(OUT_DIR, exist_ok=True)
 
@@ -99,7 +112,7 @@ def main():
               f"({model.num_timesteps:,} total) — DR/curriculum continue")
 
     def thunk():
-        return Monitor(BraveBotLocomotionEnv(global_offset=global_offset))
+        return Monitor(EnvCls(global_offset=global_offset))
 
     VecEnv = DummyVecEnv if args.envs == 1 else SubprocVecEnv
     venv = VecEnv([thunk for _ in range(args.envs)])
@@ -112,9 +125,8 @@ def main():
                     gamma=0.99, learning_rate=3e-4, ent_coef=0.005, clip_range=0.2,
                     policy_kwargs=dict(net_arch=[512, 256, 128]), device="cpu")
 
-    from bravebot_sim.rl.env import BraveBotLocomotionEnv
-    eval_env = BraveBotLocomotionEnv(randomize=False)   # clean deterministic eval
-    dr_eval_env = BraveBotLocomotionEnv(randomize=True)  # robustness eval (DR + pushes)
+    eval_env = EnvCls(randomize=False)   # clean deterministic eval
+    dr_eval_env = EnvCls(randomize=True)  # robustness eval (DR + pushes)
     dr_eval_env._global = 10_000_000                     # force DR ramp fully ON
     keepbest = lambda m: combined_eval(m, eval_env, dr_eval_env)
 

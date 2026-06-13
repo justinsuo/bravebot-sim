@@ -31,6 +31,22 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 14: STARTED THE HEADING-AWARE POLICY (the one remaining real lever, pursued
+  SAFELY as a separate additive track). Champion-refine confirmed plateaued again
+  (3456.1 < 3469.5), so I redirected that training slot. New bravebot_sim/rl/heading_env.py
+  = HeadingAwareEnv(BraveBotLocomotionEnv): obs 40->42 (adds sin/cos of heading error =
+  actual yaw vs the integral of commanded yaw rate) + a heading-hold reward (0.8*exp).
+  This gives the policy the absolute-heading signal it never had — the fix for the
+  "rotation is bad" drift AND clean patrol traversal. Wired rl_train.py --heading to
+  train it on a SEPARATE track (policy_heading.*, progress_heading.csv) so the shipped
+  40-d champion + all tooling/tests/demos are 100% untouched (verified: suite still 9/9,
+  heading env sanity OK — straight cmd holds heading_err~0, turn cmd integrates yaw_des).
+  Launched from-scratch heading training (30M, --envs 16); early as expected (500k:
+  ep_len 35, learning to balance first). It'll climb over coming cycles; champion
+  protected regardless of whether it converges in-session. NEXT: watch policy_heading
+  learn to balance->track->hold heading; once it holds heading + stays robust, render a
+  clean full-aisle patrol traversal with it as a new demo. Promote nothing unless it
+  clearly beats the champion on its own merits.
 - cycle 13: GREEN-BOARD VERIFICATION caught + fixed a deliverable bug. Latest run best
   combined 3458.7 < champion 3469.5 (plateau holds, not promoted). A full-system verify
   found the cycle-11 rl_patrol.mp4 actually showed the robot FALLING at 13.3s: the
