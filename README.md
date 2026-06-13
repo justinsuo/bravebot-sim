@@ -20,7 +20,7 @@ and recovers from shoves — plus the four-sensor inspection patrol it was built
 | **Autonomous inspection patrol** (kinematic) | **Balance-assisted legged gait** |
 | ![patrol](docs/media/patrol.gif) | ![gait](docs/media/gait.gif) |
 
-<sub>Full-resolution clips: [**rl_patrol.mp4**](renders/rl_patrol.mp4) (RL-policy inspection round) · [**rl_robust.mp4**](renders/rl_robust.mp4) (push recovery, 5/5 shoves @130–150 N) · [rl_walk_v2.mp4](renders/rl_walk_v2.mp4) · [physics.mp4](renders/physics.mp4) · [patrol.mp4](renders/patrol.mp4) · [gait.mp4](renders/gait.mp4)</sub>
+<sub>Full-resolution clips: [**rl_robust.mp4**](renders/rl_robust.mp4) (RL push recovery — survives 5/5 shoves @130–150 N) · [rl_walk_v2.mp4](renders/rl_walk_v2.mp4) · [physics.mp4](renders/physics.mp4) · [patrol.mp4](renders/patrol.mp4) (kinematic inspection patrol) · [gait.mp4](renders/gait.mp4)</sub>
 
 | ![studio](renders/hero_studio.png) | ![in the aisle](renders/hero_patrol.png) | ![collision](renders/physics_collision.png) |
 |---|---|---|
@@ -214,11 +214,14 @@ learned policy. Two tracks are provided:
   [`bravebot_sim/rl/README.md`](bravebot_sim/rl/README.md).
 
 - **RL-driven inspection patrol** ([`scripts/rl_patrol.py`](scripts/rl_patrol.py))
-  — the learned policy balances and drives a full legged inspection round of the
-  cold aisle while the onboard sensors scan for anomalies
-  ([rl_patrol.mp4](renders/rl_patrol.mp4)): a waypoint navigator sets the velocity
-  command (and picks forward/reverse to avoid an impossible 180° spin) on top of the
-  policy. `python scripts/rl_patrol.py --check` runs it headless.
+  — a waypoint navigator sets the velocity command on top of the learned policy so
+  it balances + drives an inspection sweep while the onboard sensors scan for
+  anomalies (`--check` runs it headless: stable, 4/5 anomalies detected). Honest
+  scope: the policy tracks yaw *rate*, not absolute heading, so the current champion
+  covers the near aisle reliably but doesn't cleanly traverse the full route —
+  clean full traversal is the motivation for a future heading-aware policy (a
+  heading-error observation + retrain). The deterministic kinematic
+  [`PatrolController`](bravebot_sim/patrol.py) remains the survey-grade coverage tool.
 
 ```bash
 pip install -r requirements-rl.txt

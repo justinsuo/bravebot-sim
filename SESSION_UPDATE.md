@@ -28,10 +28,12 @@ wheel-legged BraveBot (modified LimX TRON 1) on full MuJoCo rigid-body physics.
   shoves (5/5)**, 0 falls, while *recovering* clean performance (~1757) — robustness
   gained at no nominal cost. ([renders/rl_robust.mp4](renders/rl_robust.mp4))
 
-- **RL-driven inspection patrol.** The learned policy now balances and drives a full
-  legged inspection round of the data-center cold aisle while the onboard sensors
-  scan for anomalies ([scripts/rl_patrol.py](scripts/rl_patrol.py),
-  [renders/rl_patrol.mp4](renders/rl_patrol.mp4)).
+- **RL-driven inspection patrol.** A waypoint navigator on top of the learned policy
+  drives the robot through a sensor sweep of the cold aisle
+  ([scripts/rl_patrol.py](scripts/rl_patrol.py)). It runs stably and detects 4/5
+  anomalies; clean full-route traversal is limited by the policy's heading drift (see
+  below) and the deterministic kinematic `PatrolController` remains the survey-grade
+  coverage tool.
 
 - **Regression test suite** ([tests/test_sim.py](tests/test_sim.py), 9/9): meshes,
   both MJCF models compile with sane mass/CoM, URDF connectivity, kinematic
@@ -39,8 +41,8 @@ wheel-legged BraveBot (modified LimX TRON 1) on full MuJoCo rigid-body physics.
   dedicated regressions for the two high-severity fixes above.
 
 ## New / refreshed demos
-- `renders/rl_patrol.mp4` — RL-policy inspection round (walks the aisle, scans 4/5+).
-- `renders/rl_robust.mp4` — push recovery, survives 5/5 shoves at 130–150 N.
+- `renders/rl_robust.mp4` — RL push recovery: the champion drives while absorbing
+  5/5 lateral/longitudinal shoves at 130–150 N (above its 30–100 N training range).
 
 ## Known limitation / next big lever
 The locomotion policy tracks commanded yaw *rate*, not absolute heading (it has no

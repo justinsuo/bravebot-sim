@@ -31,6 +31,21 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 13: GREEN-BOARD VERIFICATION caught + fixed a deliverable bug. Latest run best
+  combined 3458.7 < champion 3469.5 (plateau holds, not promoted). A full-system verify
+  found the cycle-11 rl_patrol.mp4 actually showed the robot FALLING at 13.3s: the
+  robustness-trained champion has a strong yaw-heading drift, and the navigator's
+  aggressive steering let yaw run away (spun to ~-170deg, reverse-drove tilted ~24deg,
+  toppled). Fixes: gentler nav (V_MAX 0.5->0.4, V_REV->-0.3) + a TILT THROTTLE (ease off
+  vx/yaw above 0.30 rad body tilt so it never drives a toppling robot) + forward-only
+  inspection route (no turnaround spin). Result: STABLE (120s upright, 0 falls) and
+  detects 4/5 anomalies, but the strong heading drift makes it circle near the entry
+  (x~1.9) rather than traverse — so I made it HONEST: removed the misleading
+  rl_patrol.mp4, relaxed --check to upright+>=4 anomalies, and reworded README/
+  SESSION_UPDATE to present the patrol as a stable near-aisle inspection tool whose
+  full traversal awaits the heading-aware policy. rl_robust.mp4 (push recovery, solid)
+  is now the headline RL demo. Green board: tests 9/9, patrol CHECK OK, balance PASS.
+  NEXT: heading-aware policy is the clear next lever (fixes patrol traversal + rotation).
 - cycle 12: *** END-OF-SESSION DELIVERABLE (training plateaued) ***. Latest run best
   combined 3470.2 vs champion 3469.5 = within noise -> NOT promoted; the policy is
   confirmed at its architecture ceiling (~3470) across runs. Delivered: (a) rendered a
