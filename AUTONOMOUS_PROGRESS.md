@@ -31,6 +31,19 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 29: tried to DELIVER the user's "walk side to side" via the scripted gait's
+  latent lateral side-step (abad_amp, which was never enabled). Result: NOT safely
+  possible. Tested abad_amp over the real gait schedule (march/forward 0.4/back/turn):
+  even abad_amp=0.02 TIPS the robot at ~4.3s during the 0.4 m/s forward phase (only 0.0
+  survives the full 14.5s). Root cause = the same morphology as the strafe finding:
+  splaying the ab/ad joints shifts the support base and the wheel-balance can't recover
+  at speed. So abad_amp defaults to 0 for a reason. Reverted to 0.0; rewrote the gait.py
+  docstring to honestly explain lateral side-stepping is OFF (it tips the robot) and
+  sideways motion = turn-then-drive; restored the stable committed gait.mp4 (my trial
+  re-render had fallen @4.6s). Net: a documented negative result + honest docs; no
+  regression, gait stable, tests 11/11. CONCLUSION on "side to side": this single-axle
+  wheeled biped cannot translate laterally by wheels OR by leg side-step (both tip it);
+  forward/back/turn/arc + turn-then-drive is the true, now-honestly-documented envelope.
 - cycle 28: CAPABILITY-vs-DOCS honesty audit found an OVERCLAIM. Tested lateral strafe
   (the user's "walk side to side"): BOTH policies stay upright but DON'T strafe — for a
   vy=0.2 command they move only ~0.01 m/s laterally (vy tracking error = the full

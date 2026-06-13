@@ -9,9 +9,14 @@ controller keeps the robot upright and provides translation, while the legs run
 a visible alternating stepping cycle on top. The amplitude is kept inside the
 range that does not destabilize balance (found empirically).
 
-It gives the robot legged-looking locomotion now — march in place, step forward
-/ backward, side-to-side (lateral lean + heading), and a step-turn — runnable on
-a Mac with no training.
+It gives the robot legged-looking locomotion now — march in place, step forward /
+backward, and a step-turn — runnable on a Mac with no training.
+
+Lateral side-stepping is intentionally OFF (`abad_amp=0`): swaying the ab/ad joints
+splays the legs and shifts the support base, which the wheel-balance can't recover at
+walking speed (it tips within a few seconds — measured). Sideways motion on this
+single-axle wheeled biped is therefore done by turn-then-drive, not a leg side-step;
+`abad_amp` is left as a tunable for very-low-speed experiments only.
 """
 
 from __future__ import annotations
