@@ -31,6 +31,14 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 27: end-to-end check that the DOCUMENTED user-facing commands actually run (doc
+  vs reality). All good: scripts/patrol_demo.py (detects anomalies, writes frames),
+  scripts/view.py --check (kinematic self-test OK), scripts/export_manifest.py
+  (regenerated components.json + BILL_OF_MATERIALS.md BYTE-IDENTICAL -> manifest is
+  current + reproducible). Only churn: patrol_demo re-renders renders/patrol_contact.png
+  with trivial pixel diffs (tracked demo image) -> reverted the spurious change. No bug.
+  Audited so far: ONNX deploy [fixed], URDF [clean+locked], deps [clean], documented
+  commands + manifest [clean]. Repo clean, tests 11/11.
 - cycle 26: audited dependency correctness (fresh-clone install). CLEAN: every real
   third-party import (mujoco, numpy, trimesh, imageio | gymnasium, stable_baselines3,
   torch, onnxruntime) is covered by requirements.txt / requirements-rl.txt; the lone
