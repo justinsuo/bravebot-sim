@@ -31,6 +31,15 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 4: *** NATURAL STANCE ACHIEVED ***. Strong waist-upright penalty (-0.8)
+  straightened the torso: policy now stands UPRIGHT (waist ~0) with a moderate ±24°
+  stance — not the splits, not tilted. Robust: 0 falls through walk/turn/arc/back +
+  120N & 90N shoves; tracking turn 0.06 / fwd 0.14; eval 1683 (best yet). Refreshed
+  gallery GIF + mp4 to the new look. Saved policy_champion (the shipped deliverable).
+  Launched a low-risk RESUME-refine run (12M, pid 94994) to polish further —
+  champion is protected, so PROMOTE the refined policy next cycle ONLY if its eval
+  beats the champion's. POSTURE IS SOLVED — next cycles DIVERSIFY: code-review
+  workflow (find/fix bugs), unit tests, RL-driven inspection patrol, terrain/DR.
 - cycle 3: moderate-splay(17°cap)+waist run FINISHED clean — robust, good tracking
   (fwd 0.11, turn 0.20, 0 falls), sane velocities, moderate ±22° splay (NOT splits),
   eval 1630 (keep-best worked, dodged a 20.5M PPO hiccup). Snapshot = policy_v3.
