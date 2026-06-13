@@ -43,6 +43,7 @@ MODEL = os.path.normpath(os.path.join(_HERE, "..", "..", "description", "mjcf", 
 LEG_JOINTS = ["abad_L", "hip_L", "knee_L", "abad_R", "hip_R", "knee_R"]
 LEG_RANGE = np.array([0.4, 0.6, 0.6, 0.4, 0.6, 0.6])
 WHEEL_TORQUE = 40.0
+WAIST_RANGE = 0.9        # rad — torso roll action scale (active roll control)
 WHEEL_RADIUS = float(R.WHEEL_RADIUS)
 STANCE_VEC = np.array([STANCE[j] for j in LEG_JOINTS])
 # real LimX leg limits in LEG_JOINTS order, for a soft joint-limit barrier
@@ -80,6 +81,9 @@ class BraveBotLocomotionEnv(gym.Env):
         self._leg_qadr = [self.model.jnt_qposadr[nm(j, mujoco.mjtObj.mjOBJ_JOINT)] for j in LEG_JOINTS]
         self._leg_vadr = [self.model.jnt_dofadr[nm(j, mujoco.mjtObj.mjOBJ_JOINT)] for j in LEG_JOINTS]
         self._wheel_vadr = [self.model.jnt_dofadr[nm(f"wheel_{s}", mujoco.mjtObj.mjOBJ_JOINT)] for s in "LR"]
+        self._waist_act = nm("torso_roll_pos", mujoco.mjtObj.mjOBJ_ACTUATOR)
+        self._waist_qadr = self.model.jnt_qposadr[nm("torso_roll", mujoco.mjtObj.mjOBJ_JOINT)]
+        self._waist_vadr = self.model.jnt_dofadr[nm("torso_roll", mujoco.mjtObj.mjOBJ_JOINT)]
         self._sid = {n: nm(n, mujoco.mjtObj.mjOBJ_SENSOR) for n in ("base_gyro", "base_vel")}
         self._base = nm("base_link", mujoco.mjtObj.mjOBJ_BODY)
         self._torso = nm("torso_link", mujoco.mjtObj.mjOBJ_BODY)
@@ -89,10 +93,10 @@ class BraveBotLocomotionEnv(gym.Env):
         self._push = PushPerturber(self._torso, PUSH_DEFAULT)
         self._latency = ActionLatency(delay_steps=1)   # ~20 ms
 
-        self.action_space = spaces.Box(-1.0, 1.0, (8,), np.float32)
-        self.observation_space = spaces.Box(-np.inf, np.inf, (37,), np.float32)
-        self._last_action = np.zeros(8, np.float32)
-        self._prev_action = np.zeros(8, np.float32)
+        self.action_space = spaces.Box(-1.0, 1.0, (9,), np.float32)   # +1 = torso roll
+        self.observation_space = spaces.Box(-np.inf, np.inf, (40,), np.float32)
+        self._last_action = np.zeros(9, np.float32)
+        self._prev_action = np.zeros(9, np.float32)
         self._cmd = np.zeros(3, np.float32)
         self._t = 0
         self._global = 0
@@ -123,8 +127,9 @@ class BraveBotLocomotionEnv(gym.Env):
         leg_q = self.data.qpos[self._leg_qadr] - STANCE_VEC
         leg_v = self.data.qvel[self._leg_vadr]
         wheel_v = self.data.qvel[self._wheel_vadr]
+        waist = [float(self.data.qpos[self._waist_qadr]), float(self.data.qvel[self._waist_vadr])]
         clock = [math.sin(self._phase), math.cos(self._phase)]
-        obs = np.concatenate([pg, gyro, vel, leg_q, leg_v, wheel_v, clock,
+        obs = np.concatenate([pg, gyro, vel, leg_q, leg_v, wheel_v, waist, clock,
                               self._last_action, self._cmd, [self._dr_ramp()]]).astype(np.float32)
         if noisy and self.randomize:
             n = self._dr_ramp()      # sensor noise also ramps in with DR
@@ -155,7 +160,7 @@ class BraveBotLocomotionEnv(gym.Env):
         self._cmd = self._sample_cmd()
         self._last_action[:] = 0.0
         self._prev_action[:] = 0.0
-        self._latency.reset(8)
+        self._latency.reset(9)
         self._push.reset(self.np_random, self.control_hz)
         self._t = 0
         self._phase = float(self.np_random.uniform(0, 2 * math.pi))
@@ -170,6 +175,7 @@ class BraveBotLocomotionEnv(gym.Env):
             self.data.ctrl[aid] = tgt
         self.data.ctrl[self._wheel_act[0]] = wheel_torque[0]
         self.data.ctrl[self._wheel_act[1]] = wheel_torque[1]
+        self.data.ctrl[self._waist_act] = applied[8] * WAIST_RANGE   # torso roll target
 
         for k in range(self.decimation):
             if self.randomize:
@@ -207,11 +213,11 @@ class BraveBotLocomotionEnv(gym.Env):
         # --- small penalty regularizers (kept << positive shaping) ---
         p_arate = -0.008 * float(np.sum((action - self._prev_action) ** 2))   # smoothness
         p_energy = -0.0003 * float(np.sum(action ** 2))                        # effort
-        # light posture regularizer on hips/knees. NB: the policy adopts a WIDE
-        # (ab/ad-splayed) stance on purpose — a wider base is roll-stable, which is
-        # how it compensates for having NO roll actuator. Forcing it narrow (capping
-        # ab/ad) measurably increased falls under disturbance, so we don't fight it.
-        p_pose = -0.02 * float(np.sum(leg_dev[PITCHKNEE_IDX] ** 2))
+        # posture: now that the actuated torso-roll joint provides real roll
+        # control, penalize ab/ad SPLAY so the policy balances roll with the WAIST
+        # (lean the upper body) and keeps the legs tucked — a natural stance.
+        p_pose = (-0.05 * float(np.sum(leg_dev[PITCHKNEE_IDX] ** 2))
+                  - 0.15 * float(np.sum(leg_q[ABAD_IDX] ** 2)))
         over_hi = np.clip(leg_q - (LEG_UPPER - 0.1), 0, None)
         over_lo = np.clip((LEG_LOWER + 0.1) - leg_q, 0, None)
         p_limit = -1.0 * float(np.sum(over_hi ** 2 + over_lo ** 2))            # limit barrier

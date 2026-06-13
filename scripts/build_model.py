@@ -112,6 +112,11 @@ LEG_SERVO = {"abad": dict(kp=600, kv=25, damping=4, friction=0.2, armature=0.02)
 LEG_EFFORT = 80.0          # N·m, real LimX leg actuators
 WHEEL_PEAK_TORQUE = 40.0   # N·m, real LimX wheel actuators
 WHEEL_HALF_WIDTH = 0.024   # m, tire half-width (from wheel mesh extent)
+# BraveBot active roll-stabilization: an actuated waist roll joint carrying the
+# payload, so the policy can lean the upper body to control roll without splaying.
+WAIST_PIVOT = (0.02, 0.0, 0.06)   # low pivot -> strong CoM-shift roll authority
+WAIST_RANGE = 0.9                 # rad
+WAIST_EFFORT = 120.0              # N·m (heavy payload)
 
 
 def build_mjcf(physics: bool = False) -> str:
@@ -176,15 +181,28 @@ def build_mjcf(physics: bool = False) -> str:
         ET.SubElement(base, "inertial", pos="0 0 -0.1", mass=str(LINK_MASS["base"]),
                       diaginertia="0.25 0.25 0.18")
 
-    # BraveBot modification bodies (fixed to the base)
+    # BraveBot payload. In PHYSICS mode the whole payload hangs off an ACTUATED
+    # waist roll joint, so the policy can lean the heavy upper body to actively
+    # control roll (instead of splaying the legs) — its missing roll actuator.
+    if physics:
+        torso = ET.SubElement(base, "body", name="torso_roll", pos=_v(WAIST_PIVOT))
+        ET.SubElement(torso, "joint", name="torso_roll", type="hinge", axis="1 0 0",
+                      range=f"-{WAIST_RANGE} {WAIST_RANGE}", damping="3",
+                      armature="0.05", frictionloss="0.1")
+        ET.SubElement(torso, "inertial", pos="0 0 0.05", mass="0.3",
+                      diaginertia="0.002 0.002 0.002")   # connector; mass is the children
+        payload_parent, off = torso, WAIST_PIVOT
+    else:
+        payload_parent, off = base, (0.0, 0.0, 0.0)
+
     for comp in R.COMPONENTS:
-        body = ET.SubElement(base, "body", name=f"{comp.id}_link", pos=_v(comp.pos))
+        pos = (comp.pos[0] - off[0], comp.pos[1] - off[1], comp.pos[2] - off[2])
+        body = ET.SubElement(payload_parent, "body", name=f"{comp.id}_link", pos=_v(pos))
         rgba = SENSOR_RGBA[comp.sensor.modality] if comp.sensor else GROUP_RGBA[comp.group]
         ET.SubElement(body, "geom", type="mesh", mesh=f"m_{comp.id}", rgba=rgba)
         if physics:
             _add_inertial(body, COMP_MASS[comp.id], f"bravebot/{comp.id}.stl")
         if comp.sensor:
-            # site frame: +x of the body is the sensor look axis (matches geometry)
             ET.SubElement(body, "site", name=f"s_{comp.id}", pos="0 0 0",
                           rgba=SENSOR_RGBA[comp.sensor.modality])
 
@@ -245,6 +263,8 @@ def build_mjcf(physics: bool = False) -> str:
         for side in ("L", "R"):
             ET.SubElement(sens, "jointvel", name=f"wheel_{side}_w", joint=f"wheel_{side}")
             ET.SubElement(sens, "jointpos", name=f"wheel_{side}_q", joint=f"wheel_{side}")
+        ET.SubElement(sens, "jointpos", name="torso_roll_q", joint="torso_roll")
+        ET.SubElement(sens, "jointvel", name="torso_roll_w", joint="torso_roll")
 
     # Actuators
     act = ET.SubElement(mj, "actuator")
@@ -261,6 +281,10 @@ def build_mjcf(physics: bool = False) -> str:
             ET.SubElement(act, "motor", name=f"wheel_{side}_mot", joint=f"wheel_{side}",
                           gear="1", ctrlrange=f"-{WHEEL_PEAK_TORQUE} {WHEEL_PEAK_TORQUE}",
                           forcerange=f"-{WHEEL_PEAK_TORQUE} {WHEEL_PEAK_TORQUE}")   # real 40 N·m
+        # waist roll: position servo (RL commands a lean target; controllers hold 0)
+        ET.SubElement(act, "position", name="torso_roll_pos", joint="torso_roll",
+                      kp="350", kv="20", ctrlrange=f"-{WAIST_RANGE} {WAIST_RANGE}",
+                      forcerange=f"-{WAIST_EFFORT} {WAIST_EFFORT}")
     else:
         for side in ("L", "R"):
             ET.SubElement(act, "velocity", name=f"wheel_{side}_vel", joint=f"wheel_{side}",
