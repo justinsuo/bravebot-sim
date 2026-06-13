@@ -188,35 +188,33 @@ class BraveBotLocomotionEnv(gym.Env):
         leg_dev = leg_q - STANCE_VEC
         vx_cmd, vy_cmd, yaw_cmd = self._cmd
 
-        # --- reward (wheel-legged locomotion shaping; synthesized design) ---
+        # --- reward (wheel-legged locomotion) ---
+        # POSITIVE shaping dominates so being upright is always net-positive (else
+        # the policy learns to fall fast to stop accruing penalties). Penalties are
+        # small regularizers that refine the gait, NOT learning blockers.
         # (A) command tracking
         r_vx = 1.5 * math.exp(-5.0 * (vel[0] - vx_cmd) ** 2)
         r_vy = 0.6 * math.exp(-8.0 * (vel[1] - vy_cmd) ** 2)
         r_yaw = 1.0 * math.exp(-5.0 * (gyro[2] - yaw_cmd) ** 2)
         # (B) upright via projected gravity, (C) base height, (D) alive
-        r_orient = 0.8 * math.exp(-20.0 * (pg[0] ** 2 + pg[1] ** 2))
-        r_height = 0.3 * math.exp(-80.0 * (height - self._stance_h) ** 2)
-        r_alive = 0.25
-        # (E) action-rate smoothness (biggest anti-wobble lever)
-        p_arate = -0.05 * float(np.sum((action - self._prev_action) ** 2))
-        # (F) energy: wheel mechanical power + small action L2
-        p_energy = (-0.0006 * float(np.sum(np.abs(wheel_torque * wheel_w)))
-                    - 0.0008 * float(np.sum(action ** 2)))
-        # (G) posture on hips/knees, (H) soft joint-limit barrier
-        p_pose = -0.15 * float(np.sum(leg_dev[PITCHKNEE_IDX] ** 2))
-        over_hi = np.clip(leg_q - (LEG_UPPER - 0.1), 0, None)
-        over_lo = np.clip((LEG_LOWER + 0.1) - leg_q, 0, None)
-        p_limit = -2.0 * float(np.sum(over_hi ** 2 + over_lo ** 2))
+        r_orient = 0.9 * math.exp(-12.0 * (pg[0] ** 2 + pg[1] ** 2))
+        r_height = 0.3 * math.exp(-60.0 * (height - self._stance_h) ** 2)
+        r_alive = 0.6
         # (I) lateral-lean shaping so vy is attempted via the legs (wheels can't strafe)
         lean = float(leg_q[ABAD_IDX[0]] + leg_q[ABAD_IDX[1]])
         lean_des = float(np.clip(vy_cmd / 0.3, -1, 1)) * 0.4
-        r_lean = 0.25 * math.exp(-15.0 * (lean - lean_des) ** 2)
-        # (J) wheel-slip penalty (clean rolling, no skid)
+        r_lean = 0.2 * math.exp(-15.0 * (lean - lean_des) ** 2)
+        # --- small penalty regularizers (kept << positive shaping) ---
+        p_arate = -0.008 * float(np.sum((action - self._prev_action) ** 2))   # smoothness
+        p_energy = -0.0003 * float(np.sum(action ** 2))                        # effort
+        p_pose = -0.02 * float(np.sum(leg_dev[PITCHKNEE_IDX] ** 2))            # posture
+        over_hi = np.clip(leg_q - (LEG_UPPER - 0.1), 0, None)
+        over_lo = np.clip((LEG_LOWER + 0.1) - leg_q, 0, None)
+        p_limit = -1.0 * float(np.sum(over_hi ** 2 + over_lo ** 2))            # limit barrier
         slip = WHEEL_RADIUS * float(np.mean(wheel_w)) - vel[0]
-        p_slip = -0.2 * slip ** 2
-        # (K) base lateral/vertical velocity damping, (L) roll/pitch rate damping
-        p_bvel = -0.1 * (vel[1] - vy_cmd) ** 2 - 0.2 * float(vel[2]) ** 2
-        p_gyro = -0.02 * float(gyro[0] ** 2 + gyro[1] ** 2)
+        p_slip = -0.03 * slip ** 2                                            # clean rolling
+        p_bvel = -0.03 * (vel[1] - vy_cmd) ** 2 - 0.05 * float(vel[2]) ** 2   # no hop/wobble
+        p_gyro = -0.01 * float(gyro[0] ** 2 + gyro[1] ** 2)                   # roll/pitch damping
 
         reward = (r_vx + r_vy + r_yaw + r_orient + r_height + r_alive + r_lean
                   + p_arate + p_energy + p_pose + p_limit + p_slip + p_bvel + p_gyro)
