@@ -42,6 +42,8 @@ a written summary update of everything that improved.
   ALL tracked policies (champion/policy/heading + drhardened + v2/v3/v4/v5); verified
   FAITHFUL+bounded (max|PPO-ONNX|~1e-6, all actions in [-1,1]). In-sim behavior unchanged,
   tests 10/10. A genuine sim-to-real correctness fix surfaced by auditing the deploy path.
+  Locked it in with test_onnx_artifacts_bounded (asserts shipped .onnx actions stay in
+  [-1,1] incl. OOD obs; skips if onnxruntime absent) -> suite 11/11.
 - cycle 23: rewrote the stale RL README (bravebot_sim/rl/README.md). It still described
   an EARLY state — "obs 33-d / action 8-d", and listed domain randomization, curriculum,
   and sim-to-real hardening as FUTURE steps (all long done). Updated to the real state:

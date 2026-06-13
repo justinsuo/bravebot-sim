@@ -172,6 +172,34 @@ def test_heading_env():
     assert np.allclose(a, b), "heading env reset(seed) not deterministic"
 
 
+def test_onnx_artifacts_bounded():
+    # Regression for the deployment fix: the shipped .onnx actors must clamp actions to
+    # [-1,1] so they're safe drop-in artifacts on the real robot (the raw policy mean can
+    # be out-of-range on OOD states). Skips gracefully if onnxruntime / the artifacts are
+    # absent (e.g. a fresh clone without the RL extras).
+    try:
+        import onnxruntime as ort
+    except ImportError:
+        print("  (skip: onnxruntime not installed)")
+        return
+    rl = os.path.join(ROOT, "bravebot_sim", "rl")
+    checked = 0
+    for name in ("policy.onnx", "policy_champion.onnx", "policy_heading.onnx"):
+        path = os.path.join(rl, name)
+        if not os.path.exists(path):
+            continue
+        sess = ort.InferenceSession(path)
+        dim = sess.get_inputs()[0].shape[-1]
+        dim = int(dim) if isinstance(dim, int) else (42 if "heading" in name else 40)
+        rng = np.random.default_rng(0)
+        for _ in range(80):
+            o = rng.normal(0, 2.0, (1, dim)).astype(np.float32)   # incl. OOD states
+            a = sess.run(None, {"obs": o})[0][0]
+            assert a.min() >= -1.0001 and a.max() <= 1.0001, f"{name} emits out-of-range action {a}"
+        checked += 1
+    assert checked >= 1, "no .onnx artifacts found to check"
+
+
 def _run_all():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     fails = 0
