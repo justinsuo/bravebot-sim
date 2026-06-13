@@ -51,7 +51,12 @@ LEG_UPPER = np.array([R.LIMX_JOINT[j.replace("_", "")]["upper"] for j in LEG_JOI
 ABAD_IDX = np.array([0, 3])         # ab/ad (lateral lean) DoFs
 PITCHKNEE_IDX = np.array([1, 2, 4, 5])
 GAIT_HZ = 1.4            # gait clock frequency
-RAMP_STEPS = 200_000     # per-env control steps to ramp curriculum 0 -> 1
+# Curriculum (per-env control steps; x16 envs for totals). Learn to BALANCE +
+# track cleanly first (no disturbance), THEN ramp domain randomization + pushes —
+# otherwise it gets shoved over before it can stand.
+CMD_RAMP_STEPS = 300_000    # commands grow over ~5M total steps
+DR_WARMUP = 280_000         # ~4.5M total clean steps before any DR/pushes
+DR_RAMP_STEPS = 650_000     # DR fully on by ~15M total
 
 
 class BraveBotLocomotionEnv(gym.Env):
@@ -96,8 +101,11 @@ class BraveBotLocomotionEnv(gym.Env):
         self._cached_h = False
 
     # ------------------------------------------------------------------ #
-    def _ramp(self):
-        return float(min(1.0, self._global / RAMP_STEPS))
+    def _cmd_ramp(self):
+        return float(min(1.0, self._global / CMD_RAMP_STEPS))
+
+    def _dr_ramp(self):
+        return float(min(1.0, max(0.0, (self._global - DR_WARMUP) / DR_RAMP_STEPS)))
 
     def _sensor(self, name):
         i = self._sid[name]
@@ -117,15 +125,16 @@ class BraveBotLocomotionEnv(gym.Env):
         wheel_v = self.data.qvel[self._wheel_vadr]
         clock = [math.sin(self._phase), math.cos(self._phase)]
         obs = np.concatenate([pg, gyro, vel, leg_q, leg_v, wheel_v, clock,
-                              self._last_action, self._cmd, [self._ramp()]]).astype(np.float32)
+                              self._last_action, self._cmd, [self._dr_ramp()]]).astype(np.float32)
         if noisy and self.randomize:
-            obs[:3] += self.np_random.normal(0, 0.02, 3)      # gravity/orientation noise
-            obs[3:6] += self.np_random.normal(0, 0.05, 3)     # gyro noise
-            obs[6:9] += self.np_random.normal(0, 0.05, 3)     # vel noise
+            n = self._dr_ramp()      # sensor noise also ramps in with DR
+            obs[:3] += self.np_random.normal(0, 0.02 * n, 3)
+            obs[3:6] += self.np_random.normal(0, 0.05 * n, 3)
+            obs[6:9] += self.np_random.normal(0, 0.05 * n, 3)
         return obs
 
     def _sample_cmd(self):
-        r = self._ramp()
+        r = self._cmd_ramp()
         # curriculum: grow command ranges as the ramp increases; vy comes in late
         vx = self.np_random.uniform(-0.4 - 0.3 * r, 0.5 + 0.4 * r)
         vy = self.np_random.uniform(-0.25, 0.25) * r
@@ -138,7 +147,7 @@ class BraveBotLocomotionEnv(gym.Env):
     def reset(self, *, seed=None, options=None):
         super().reset(seed=seed)
         if self.randomize:
-            self._dr.reset(self.np_random, scale=self._ramp())
+            self._dr.reset(self.np_random, scale=self._dr_ramp())
         settle_upright(self.model, self.data, self._ctrl)
         if not self._cached_h:
             self._stance_h = float(self.data.xpos[self._base][2])
@@ -165,7 +174,7 @@ class BraveBotLocomotionEnv(gym.Env):
         for k in range(self.decimation):
             if self.randomize:
                 self._push.apply(self.data, self._t, self.np_random, self.control_hz,
-                                 scale=self._ramp())
+                                 scale=self._dr_ramp())
             mujoco.mj_step(self.model, self.data)
         self._phase = (self._phase + 2 * math.pi * GAIT_HZ / self.control_hz) % (2 * math.pi)
 
