@@ -31,6 +31,13 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 26: audited dependency correctness (fresh-clone install). CLEAN: every real
+  third-party import (mujoco, numpy, trimesh, imageio | gymnasium, stable_baselines3,
+  torch, onnxruntime) is covered by requirements.txt / requirements-rl.txt; the lone
+  oddity ("density") was a false positive (a docstring line in build_model.py, not an
+  import). Green board confirmed: tests 11/11, eval_balance regression PASS. No action
+  needed — another surface verified correct. (Audited so far: ONNX deploy [fixed], URDF
+  [clean+locked], deps [clean].)
 - cycle 25: audited the URDF (the ROS 2/Gazebo/RViz deliverable, previously only
   connectivity-tested). Result: CLEAN — 27 links/26 joints connected, every link has
   positive inertia, all revolute joints have limits, all 54 mesh refs resolve, total
