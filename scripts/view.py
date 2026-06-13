@@ -115,17 +115,18 @@ def run(bare: bool, physics: bool, walk: bool = False):
             time.sleep(max(0.0, dt - (time.time() - t0)))
 
 
-def check(physics: bool = False):
+def check(physics: bool = False, walk: bool = False):
     """Headless validation of the control loop — opens no window."""
-    sess = Session(bare=False, physics=physics)
+    sess = Session(bare=False, physics=physics, walk=walk)
     for _ in range(600):           # ~12 s of autonomous patrol
         sess.tick(0.02)
     for code in (UP, UP, LEFT, ENTER):   # exercise manual + resume
         sess.on_key(code)
     for _ in range(150):
         sess.tick(0.02)
-    upright = (not sess.bot.fell) if physics else True
-    print(f"check OK ({'physics' if physics else 'kinematic'}): "
+    mode = "walk" if walk else "physics" if physics else "kinematic"
+    upright = (not sess.bot.fell) if (physics or walk) else True
+    print(f"check OK ({mode}): "
           f"x={sess.bot.x:.2f} y={sess.bot.y:.2f} upright={upright} "
           f"alerts={len(sess._alerted)}")
 
@@ -138,6 +139,6 @@ if __name__ == "__main__":
     ap.add_argument("--check", action="store_true", help="headless self-test")
     args = ap.parse_args()
     if args.check:
-        check(args.physics or args.walk)
+        check(args.physics or args.walk, args.walk)
     else:
         run(args.bare, args.physics, args.walk)

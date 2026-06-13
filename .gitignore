@@ -4,5 +4,8 @@ __pycache__/
 renders/_*.png
 renders/patrol/
 .DS_Store
-bravebot_sim/rl/policy.zip
-renders/_*.png
+MUJOCO_LOG.TXT
+# SB3 checkpoints are large + churn during training; the portable .onnx actors are
+# the tracked deployment artifacts (policy.onnx, policy_champion.onnx, policy_v*.onnx).
+bravebot_sim/rl/*.zip
+bravebot_sim/rl/policy_best.onnx

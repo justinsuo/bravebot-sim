@@ -114,20 +114,24 @@ class BalanceController:
     # command envelope: a high-CoM single-axle wheeled biped tips if asked to
     # turn/accelerate too hard, so cap and slew-limit the commands.
     MAX_V = 1.1          # m/s — controllable top speed
-    MAX_W = 0.45         # rad/s ceiling (per-burst; see turn budget)
+    MAX_W = 0.45         # rad/s ceiling
     V_SLEW = 2.5         # m/s per second — moderate, not jerky
     W_SLEW = 3.0         # rad/s per second
     DT_CMD = 0.002       # control period
-    # Proactive turn budgeting: with no roll actuation, the roll mode stays tiny
-    # for ~130 deg of continuous turning and then diverges abruptly (too late for
-    # any reactive limiter). So spend a budget while turning and recover it while
-    # going straight; pause turning well before the divergence, with hysteresis,
-    # so the roll mode settles. Brief turns (waypoints) are unaffected.
+    # Proactive turn budget + DIRECTIONAL lock. The robot has NO roll actuator, so a
+    # sustained same-direction arc leans the body (sign(roll) follows the accumulated
+    # turn) and the lean does not decay on its own. We spend a budget while turning
+    # and lock after a burst — which stops turning EARLY (at roll ~0.028, a big tip
+    # margin) and is what keeps every scenario upright. The crucial fix over a plain
+    # lock: while locked we block ONLY the turn that would WORSEN the lean and always
+    # let the OPPOSITE (releveling) turn through, so an opposite command can relevel
+    # and re-arm — the symmetric lock instead froze turning forever (verified bug).
     TURN_BUDGET = 0.6        # rad of cumulative turn per burst (~34 deg)
     TURN_RECOVER = 0.6       # rad/s budget recovery while going straight
     TURN_COOLDOWN_S = 2.5    # mandatory straight time after a burst (roll settles)
-    ROLL_SETTLED = 0.015     # rad — also require roll this small before turning again
+    ROLL_SETTLED = 0.025     # rad — roll this small (+ settled) re-arms full turning
     ROLLRATE_SETTLED = 0.04  # rad/s
+    ROLL_LIMIT = 0.06        # rad (~3.4 deg) — hard backstop: lock if roll exceeds it
 
     # ---- sensor read ----
     def _sensor(self, name: str) -> np.ndarray:
@@ -166,11 +170,12 @@ class BalanceController:
     def _shape_command(self, v_cmd: float, omega_cmd: float, roll: float, roll_rate: float):
         v_t = float(np.clip(self._finite(v_cmd), -self.MAX_V, self.MAX_V))
         w_t = float(np.clip(self._finite(omega_cmd), -self.MAX_W, self.MAX_W))
-        # turn budget: each burst is capped, then a mandatory cooldown (straight
-        # driving) lets the roll mode settle before turning is allowed again.
+        # hard backstop: if roll exceeds the safety limit, lock turning immediately.
+        if abs(roll) > self.ROLL_LIMIT and not self._turn_locked:
+            self._turn_locked = True
+            self._cooldown = int(self.TURN_COOLDOWN_S / self.DT_CMD)
+        # spend the turn budget while turning (any direction); recover it straight.
         if abs(w_t) > 0.02 and not self._turn_locked:
-            # deplete faster while driving — a sustained arc rolls over via the
-            # centripetal term (~ v·omega), so spend budget proportional to speed.
             self._turn_used += abs(w_t) * (1.0 + 2.5 * abs(self._v_cmd)) * self.DT_CMD
             if self._turn_used >= self.TURN_BUDGET:
                 self._turn_locked = True
@@ -181,8 +186,10 @@ class BalanceController:
             self._cooldown -= 1
             if self._cooldown <= 0 and self._turn_used <= 0.0 \
                     and abs(roll) < self.ROLL_SETTLED and abs(roll_rate) < self.ROLLRATE_SETTLED:
-                self._turn_locked = False
-            w_t = 0.0
+                self._turn_locked = False          # roll recovered -> full turning
+            elif w_t * roll >= 0.0:
+                w_t = 0.0                          # block only a lean-WORSENING turn;
+                # a releveling turn (opposite sign to roll) passes -> can recover.
         dv = self.V_SLEW * self.DT_CMD
         dw = self.W_SLEW * self.DT_CMD
         self._v_cmd += float(np.clip(v_t - self._v_cmd, -dv, dv))
@@ -212,9 +219,10 @@ class BalanceController:
 def stance_base_height(model, data) -> float:
     """Forward-kinematics base height so the wheels rest on z=0 at the stance.
 
-    The legs are bent at the stance (hip 0.30, knee -0.60), which tucks the
-    wheels up relative to the base — so the correct standing height differs from
-    the straight-leg home pose. Get it from FK, not from a fixed constant.
+    The legs are bent at the stance in the mirrored LimX convention (hip_L 0.30 /
+    knee_L 0.60; hip_R -0.30 / knee_R -0.60), which tucks the wheels up relative to
+    the base — so the correct standing height differs from the straight-leg home
+    pose. Get it from FK, not from a fixed constant.
     """
     qadr = model.jnt_qposadr[mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_JOINT, "root")]
     data.qpos[qadr:qadr + 3] = [0, 0, 1.0]

@@ -11,11 +11,12 @@ DOMAIN RANDOMIZATION (mass, friction, COM, actuator strength, floor tilt) +
 random pushes + action latency + observation noise for robustness and sim-to-real,
 and a command / DR curriculum so it learns easy skills first.
 
-Observation (37):
+Observation (40):
     projected_gravity(3), base gyro(3), base lin vel(3), leg qpos-stance(6),
-    leg qvel(6), wheel speeds(2), gait clock sin/cos(2), prev action(8),
-    command(vx, vy, yaw)(3), dr/cmd ramp(1)
-Action (8, [-1,1]): 6 leg position offsets around stance + 2 wheel torques.
+    leg qvel(6), wheel speeds(2), waist roll qpos/qvel(2), gait clock sin/cos(2),
+    prev action(9), command(vx, vy, yaw)(3), dr/cmd ramp(1)
+Action (9, [-1,1]): 6 leg position offsets around stance + 2 wheel torques +
+    1 torso-roll (waist) target.
 """
 
 from __future__ import annotations
@@ -64,7 +65,7 @@ class BraveBotLocomotionEnv(gym.Env):
     metadata = {"render_modes": []}
 
     def __init__(self, control_hz: int = 50, episode_s: float = 16.0,
-                 randomize: bool = True):
+                 randomize: bool = True, global_offset: int = 0):
         super().__init__()
         self.model = mujoco.MjModel.from_xml_path(MODEL)
         self.data = mujoco.MjData(self.model)
@@ -99,7 +100,11 @@ class BraveBotLocomotionEnv(gym.Env):
         self._prev_action = np.zeros(9, np.float32)
         self._cmd = np.zeros(3, np.float32)
         self._t = 0
-        self._global = 0
+        # per-env curriculum counter. Seeded from `global_offset` so a resumed run
+        # (scripts/rl_train.py --resume sets this from model.num_timesteps // n_envs)
+        # CONTINUES the DR/command curriculum instead of restarting at 0 — otherwise
+        # a DR-hardened policy gets ~4.5M steps of de-randomized training every resume.
+        self._global = int(global_offset)
         self._phase = 0.0
         self._stance_h = 0.78    # cached standing height (refined on first reset)
         self._cached_h = False
@@ -184,6 +189,15 @@ class BraveBotLocomotionEnv(gym.Env):
             mujoco.mj_step(self.model, self.data)
         self._phase = (self._phase + 2 * math.pi * GAIT_HZ / self.control_hz) % (2 * math.pi)
 
+        # Guard physics divergence BEFORE computing reward/obs: if the state went
+        # non-finite, every reward term + the obs would be NaN and poison PPO's
+        # batch. Terminate with a finite penalty + sanitized obs (don't rely on
+        # MuJoCo's internal auto-reset to mask it).
+        if not (np.isfinite(self.data.qpos).all() and np.isfinite(self.data.qvel).all()):
+            self._t += 1
+            self._global += 1
+            return np.nan_to_num(self._obs(noisy=False)), -5.0, True, False, {}
+
         # --- state ---
         pg = self._proj_gravity()
         gyro = self._sensor("base_gyro")
@@ -233,8 +247,7 @@ class BraveBotLocomotionEnv(gym.Env):
 
         roll = math.asin(max(-1, min(1, -self.data.xmat[self._base][7])))
         pitch = math.asin(max(-1, min(1, self.data.xmat[self._base][6])))
-        fell = abs(pitch) > 0.8 or abs(roll) > 0.8 or height < 0.45 \
-            or not np.isfinite(self.data.qpos).all()
+        fell = abs(pitch) > 0.8 or abs(roll) > 0.8 or height < 0.45   # NaN handled above
         if fell:
             reward -= 5.0
 
@@ -244,7 +257,7 @@ class BraveBotLocomotionEnv(gym.Env):
         self._global += 1
         terminated = bool(fell)
         truncated = self._t >= self.max_steps
-        return self._obs(), float(reward), terminated, truncated, {}
+        return np.nan_to_num(self._obs()), float(reward), terminated, truncated, {}
 
 
 def make_env():

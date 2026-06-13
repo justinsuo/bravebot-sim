@@ -32,10 +32,6 @@ class DomainRandomizer:
         """Randomize model dynamics in place. `scale` in [0,1] ramps DR strength."""
         c = self.cfg
 
-        def u(lo, hi):
-            mid = 1.0
-            return mid + scale * (rng.uniform(lo, hi) - mid)
-
         # body mass (all bodies) + payload/base extra
         self.m.body_mass[:] = self._mass0 * rng.uniform(
             1 - scale * c["mass_pct"], 1 + scale * c["mass_pct"], size=self._mass0.shape)

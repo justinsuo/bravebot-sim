@@ -200,8 +200,10 @@ def build_mjcf(physics: bool = False) -> str:
         body = ET.SubElement(payload_parent, "body", name=f"{comp.id}_link", pos=_v(pos))
         rgba = SENSOR_RGBA[comp.sensor.modality] if comp.sensor else GROUP_RGBA[comp.group]
         ET.SubElement(body, "geom", type="mesh", mesh=f"m_{comp.id}", rgba=rgba)
-        if physics:
-            _add_inertial(body, COMP_MASS[comp.id], f"bravebot/{comp.id}.stl")
+        # Real component inertial in BOTH modes — otherwise the kinematic geoms
+        # fall back to density=500 and MuJoCo infers a bogus 59.5 kg / CoM≈0.98 m
+        # model from the mesh volume (vs the calibrated 37 kg / 0.80 m).
+        _add_inertial(body, COMP_MASS[comp.id], f"bravebot/{comp.id}.stl")
         if comp.sensor:
             ET.SubElement(body, "site", name=f"s_{comp.id}", pos="0 0 0",
                           rgba=SENSOR_RGBA[comp.sensor.modality])

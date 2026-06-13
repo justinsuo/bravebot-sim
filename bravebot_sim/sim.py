@@ -23,12 +23,31 @@ import numpy as np
 from . import registry as R
 
 
-# stance presets: (hip, knee) joint angles -> taller/shorter base.
+# stance height presets as (hip, knee) MAGNITUDES. Applied per-joint with the
+# real LimX mirrored-axis signs (registry.STANCE: hip_L +, hip_R -, knee_L +,
+# knee_R -) so BOTH legs bend symmetrically and both wheels seat on the floor
+# together — a single raw (hip, knee) pair sent to both legs makes them rotate in
+# opposite physical directions (one wheel floats ~15 cm).
 STANCES = {
-    "tall":   (0.15, -0.30),
-    "nominal": (0.30, -0.60),
-    "low":    (0.55, -1.10),
+    "tall":    (0.15, 0.30),
+    "nominal": (0.30, 0.60),
+    "low":     (0.55, 1.10),
 }
+
+
+def _stance_pose(name: str) -> dict:
+    """Per-leg-joint angle dict for a height preset, honoring the mirrored axes."""
+    hip_mag, knee_mag = STANCES[name]
+    pose = {}
+    for j in R.LEG_JOINTS:
+        n = j.name
+        if n.startswith("hip"):
+            pose[n] = math.copysign(hip_mag, R.STANCE[n])
+        elif n.startswith("knee"):
+            pose[n] = math.copysign(knee_mag, R.STANCE[n])
+        elif n.startswith("abad"):
+            pose[n] = 0.0
+    return pose
 
 
 @dataclass
@@ -57,7 +76,6 @@ class BraveBot:
         self.x = 0.0
         self.y = 0.0
         self.yaw = 0.0
-        self.base_z = _base_z()
         self.wheel_angle = 0.0
         self.stance = "nominal"
         self.v = 0.0
@@ -101,23 +119,19 @@ class BraveBot:
         cz, sz = math.cos(self.yaw / 2), math.sin(self.yaw / 2)
         q[a + 3], q[a + 4], q[a + 5], q[a + 6] = cz, 0.0, 0.0, sz
 
-        hip, knee = STANCES[self.stance]
+        pose = _stance_pose(self.stance)
         for j in R.LEG_JOINTS:
             adr = self._leg_qadr[j.name]
-            if j.name.startswith("hip"):
-                q[adr] = hip
-            elif j.name.startswith("knee"):
-                q[adr] = knee
-            elif j.name.startswith("abad"):
-                q[adr] = 0.0
-            elif j.name.startswith("wheel"):
+            if j.name.startswith("wheel"):
                 q[adr] = self.wheel_angle
+            else:
+                q[adr] = pose[j.name]
         mujoco.mj_forward(self.model, self.data)
 
     def _stance_base_z(self) -> float:
         # height of the wheel centre below base for the current stance (FK once).
         return _stance_height(self.model, self.data, self._root_qadr,
-                              self._leg_qadr, STANCES[self.stance])
+                              self._leg_qadr, _stance_pose(self.stance))
 
     # ------------------------------------------------------------------ #
     #  sensing
@@ -179,25 +193,18 @@ def _wrap(a: float) -> float:
     return (a + math.pi) % (2 * math.pi) - math.pi
 
 
-def _base_z() -> float:
-    return -R.TRON1_LINK_POS["wheelL"][2] + R.WHEEL_RADIUS
-
-
-def _stance_height(model, data, root_qadr, leg_qadr, stance) -> float:
-    """FK the legs at this stance, return base z so the lowest wheel touches z=0."""
-    hip, knee = stance
+def _stance_height(model, data, root_qadr, leg_qadr, pose) -> float:
+    """FK the legs at this stance pose, return base z so the LOWEST wheel touches z=0."""
     q = data.qpos
     q[root_qadr + 2] = 1.0   # provisional
     q[root_qadr + 3:root_qadr + 7] = [1, 0, 0, 0]
     for name, adr in leg_qadr.items():
-        if name.startswith("hip"):
-            q[adr] = hip
-        elif name.startswith("knee"):
-            q[adr] = knee
-        else:
-            q[adr] = 0.0
+        if name.startswith("wheel"):
+            continue
+        q[adr] = pose.get(name, 0.0)
     mujoco.mj_forward(model, data)
     wl = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "wheelL_link")
-    wheel_z = data.xpos[wl][2]
-    drop = wheel_z - R.WHEEL_RADIUS     # how far the wheel bottom is above 0 now
+    wr = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "wheelR_link")
+    wheel_z = min(data.xpos[wl][2], data.xpos[wr][2])
+    drop = wheel_z - R.WHEEL_RADIUS     # how far the lowest wheel bottom is above 0 now
     return 1.0 - drop

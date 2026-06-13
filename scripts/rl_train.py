@@ -74,15 +74,30 @@ def main():
 
     os.makedirs(OUT_DIR, exist_ok=True)
 
+    resume = args.resume and os.path.exists(ZIP + ".zip")
+
+    # CONTINUE the curriculum across --resume: each env's per-env step counter must
+    # pick up where the prior run left off, else DR / pushes / command range restart
+    # at 0 for ~4.5M steps and de-randomize a hardened policy. We bake the offset
+    # into the env constructor (inside thunk) so it reaches the real env in every
+    # SubprocVecEnv worker — set_attr on the venv only hits the Monitor wrapper,
+    # whose attribute the inner BraveBotLocomotionEnv never reads.
+    global_offset = 0
+    if resume:
+        print("resuming from", ZIP + ".zip")
+        model = PPO.load(ZIP, device="cpu")            # load weights first (no env)
+        global_offset = model.num_timesteps // args.envs
+        print(f"  curriculum resumed at _global={global_offset:,}/env "
+              f"({model.num_timesteps:,} total) — DR/curriculum continue")
+
     def thunk():
-        return Monitor(BraveBotLocomotionEnv())
+        return Monitor(BraveBotLocomotionEnv(global_offset=global_offset))
 
     VecEnv = DummyVecEnv if args.envs == 1 else SubprocVecEnv
     venv = VecEnv([thunk for _ in range(args.envs)])
 
-    if args.resume and os.path.exists(ZIP + ".zip"):
-        print("resuming from", ZIP + ".zip")
-        model = PPO.load(ZIP, env=venv, device="cpu")
+    if resume:
+        model.set_env(venv)
     else:
         model = PPO("MlpPolicy", venv, verbose=0, seed=args.seed,
                     n_steps=1024, batch_size=8192, n_epochs=5, gae_lambda=0.95,
@@ -101,6 +116,12 @@ def main():
             if not args.resume or not os.path.exists(CSV):
                 with open(CSV, "w", newline="") as f:
                     csv.writer(f).writerow(["timesteps", "ep_rew_mean", "ep_len_mean", "eval", "best"])
+
+        def _on_training_start(self):
+            # On --resume num_timesteps starts at e.g. 25M; anchor the next save to
+            # the upcoming cadence boundary so we don't fire ~50 back-to-back saves
+            # (each a full eval + ONNX export) while `next` crawls up from `every`.
+            self.next = ((self.model.num_timesteps // self.every) + 1) * self.every
 
         def _on_step(self):
             if self.num_timesteps >= self.next:
