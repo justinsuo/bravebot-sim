@@ -31,6 +31,17 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 24: FIXED a real DEPLOYMENT-ARTIFACT bug (found by verifying the .onnx path).
+  The .onnx actors are what go on the real robot, but they were exported as the RAW
+  policy mean — SB3's predict() clips to [-1,1] while the ONNX did not, so on
+  out-of-distribution states the ONNX emitted out-of-range commands (±4+). Faithful only
+  after a downstream clip (in-dist diff 3.6e-7; PPO == clip(ONNX) exactly). The sim env
+  clips in step() so in-sim behavior was unaffected, but a real-robot consumer loading
+  the .onnx would get unbounded commands. Fix: export_onnx now torch.clamp(action,-1,1)
+  so the ONNX is a SELF-CONTAINED, bounded, drop-in artifact == predict(). Re-exported
+  ALL tracked policies (champion/policy/heading + drhardened + v2/v3/v4/v5); verified
+  FAITHFUL+bounded (max|PPO-ONNX|~1e-6, all actions in [-1,1]). In-sim behavior unchanged,
+  tests 10/10. A genuine sim-to-real correctness fix surfaced by auditing the deploy path.
 - cycle 23: rewrote the stale RL README (bravebot_sim/rl/README.md). It still described
   an EARLY state — "obs 33-d / action 8-d", and listed domain randomization, curriculum,
   and sim-to-real hardening as FUTURE steps (all long done). Updated to the real state:

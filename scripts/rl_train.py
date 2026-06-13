@@ -194,7 +194,13 @@ def main():
 
 
 def export_onnx(model, path):
-    """Export the deterministic actor (obs -> action) to ONNX."""
+    """Export the deterministic actor (obs -> action) to ONNX.
+
+    The action is clamped to [-1, 1] so the ONNX matches SB3's predict() (which
+    clips to the action space) and is a SELF-CONTAINED deployable artifact — without
+    this the raw policy mean can be out-of-range (±4+) on out-of-distribution states,
+    and the consumer on the real robot would have to know to clip. (The sim env
+    clips in step(), so in-sim behavior is unchanged either way.)"""
     import torch
 
     class Actor(torch.nn.Module):
@@ -205,7 +211,7 @@ def export_onnx(model, path):
         def forward(self, obs):
             features = self.policy.extract_features(obs)
             latent_pi = self.policy.mlp_extractor.forward_actor(features)
-            return self.policy.action_net(latent_pi)
+            return torch.clamp(self.policy.action_net(latent_pi), -1.0, 1.0)
 
     obs_dim = model.observation_space.shape[0]
     actor = Actor(model.policy).to("cpu").eval()
