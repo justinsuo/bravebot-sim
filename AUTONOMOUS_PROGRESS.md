@@ -31,6 +31,16 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 20: pushing sim-to-real robustness via a NEW objective — STEEPER-SLOPE domain
+  randomization (aligned with "as realistic as possible"). The shipped policies only saw
+  ±2.9° floor tilt; real facilities have ramps/raised floors. Bumped DR_DEFAULT
+  gravity_tilt 0.05->0.08 (±4.6°) and PUSH_DEFAULT 100->120N. Done SAFELY: snapshotted the
+  converged heading policy as policy_heading_v1 (the ±2.9°-trained 3454.9 best) before
+  training, so nothing good is lost; champion also protected. Relaunched heading --resume
+  on the harder regime (robustness-aware keep-best re-establishes its best under the
+  steeper eval). Tests still 10/10. NEXT: evaluate the harder-DR result vs
+  policy_heading_v1 under the steeper regime; keep whichever is more slope-robust, update
+  policy_heading + docs only if it genuinely wins (else revert the DR bump).
 - cycle 19: richer FACILITY-SCENE patrol demo (additive, low-risk). Added an optional
   model_path to the RL env (default unchanged -> champion/tests intact, verified 10/10)
   so the same policy can run inside the data-center physics scene (racks/walls). Added
