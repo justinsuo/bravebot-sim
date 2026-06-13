@@ -20,7 +20,7 @@ and recovers from shoves — plus the four-sensor inspection patrol it was built
 | **Autonomous inspection patrol** (kinematic) | **Balance-assisted legged gait** |
 | ![patrol](docs/media/patrol.gif) | ![gait](docs/media/gait.gif) |
 
-<sub>Full-resolution clips: [**rl_robust.mp4**](renders/rl_robust.mp4) (RL push recovery — survives 5/5 shoves @130–150 N) · [rl_walk_v2.mp4](renders/rl_walk_v2.mp4) · [physics.mp4](renders/physics.mp4) · [patrol.mp4](renders/patrol.mp4) (kinematic inspection patrol) · [gait.mp4](renders/gait.mp4)</sub>
+<sub>Full-resolution clips: [**rl_robust.mp4**](renders/rl_robust.mp4) (RL push recovery — survives 5/5 shoves @130–150 N) · [**rl_patrol_heading.mp4**](renders/rl_patrol_heading.mp4) (heading-aware policy walks the *full* inspection round, 5/5 anomalies) · [rl_walk_v2.mp4](renders/rl_walk_v2.mp4) · [physics.mp4](renders/physics.mp4) · [patrol.mp4](renders/patrol.mp4) (kinematic) · [gait.mp4](renders/gait.mp4)</sub>
 
 | ![studio](renders/hero_studio.png) | ![in the aisle](renders/hero_patrol.png) | ![collision](renders/physics_collision.png) |
 |---|---|---|
@@ -215,13 +215,21 @@ learned policy. Two tracks are provided:
 
 - **RL-driven inspection patrol** ([`scripts/rl_patrol.py`](scripts/rl_patrol.py))
   — a waypoint navigator sets the velocity command on top of the learned policy so
-  it balances + drives an inspection sweep while the onboard sensors scan for
-  anomalies (`--check` runs it headless: stable, 4/5 anomalies detected). Honest
-  scope: the policy tracks yaw *rate*, not absolute heading, so the current champion
-  covers the near aisle reliably but doesn't cleanly traverse the full route —
-  clean full traversal is the motivation for a future heading-aware policy (a
-  heading-error observation + retrain). The deterministic kinematic
-  [`PatrolController`](bravebot_sim/patrol.py) remains the survey-grade coverage tool.
+  it balances + drives an inspection round while the onboard sensors scan for
+  anomalies. Two policies:
+  - `--champion` (40-d, the robust shipped policy) tracks yaw *rate* only, so it
+    drifts off-heading — it covers the near aisle reliably (`--check`: stable,
+    4/5 anomalies) but can't cleanly traverse the full route.
+  - `--heading` (42-d, the **heading-aware policy**, [`bravebot_sim/rl/heading_env.py`](bravebot_sim/rl/heading_env.py))
+    adds an absolute-heading-error observation + a heading-hold reward, so it holds
+    a straight commanded heading (~5° drift vs ~53°) and walks the **full
+    out-and-back inspection round — 9/9 waypoints, 5/5 anomalies, 0 falls, also
+    surviving 130–150 N shoves** ([rl_patrol_heading.mp4](renders/rl_patrol_heading.mp4)).
+    This is the fix for the rotation drift; trained on its own track
+    (`rl_train.py --heading`) so the shipped champion is untouched.
+
+  The deterministic kinematic [`PatrolController`](bravebot_sim/patrol.py) remains a
+  survey-grade coverage option.
 
 ```bash
 pip install -r requirements-rl.txt

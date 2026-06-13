@@ -31,6 +31,20 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 15: *** HEADING-AWARE POLICY WORKS — ROTATION DRIFT FIXED + FULL PATROL
+  TRAVERSAL ***. The from-scratch heading run (cycle 14) learned fast: ep_len 35@500k ->
+  full 800 by ~16M, combined eval climbing past 3450 by 21M. Tested the 21M checkpoint:
+  straight command drifts only 5.5deg (vs champion's -53deg!), turn command tracks 91deg
+  vs 92deg expected (near-perfect), and it COMPLETES THE FULL out-and-back patrol route
+  (9/9 waypoints, 5/5 anomalies, 0 falls) — which the champion could NOT do. It is also
+  robust (survives 5/5 shoves @130-150N). So the heading-aware policy is strictly better
+  at navigation AT EQUAL robustness. Wired rl_patrol.py --heading (uses HeadingAwareEnv +
+  policy_heading + full route) and rendered renders/rl_patrol_heading.mp4 (clean full
+  inspection round, 5/5 anomalies). Updated README + SESSION_UPDATE to feature it. Still
+  TRAINING (23.5M->30M, will improve further). Champion (40-d) remains the protected
+  shipped policy; the heading policy is a 42-d sibling on its own track. NEXT: let it
+  converge; once done, consider promoting it to flagship + porting rl_view/rl_play to
+  42-d obs. (Did NOT commit the churning policy_heading.onnx; will finalize at convergence.)
 - cycle 14: STARTED THE HEADING-AWARE POLICY (the one remaining real lever, pursued
   SAFELY as a separate additive track). Champion-refine confirmed plateaued again
   (3456.1 < 3469.5), so I redirected that training slot. New bravebot_sim/rl/heading_env.py

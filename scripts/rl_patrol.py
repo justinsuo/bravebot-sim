@@ -38,6 +38,7 @@ from bravebot_sim import facility  # noqa: E402
 from bravebot_sim.sim import scan_anomalies  # noqa: E402
 
 RL_DIR = os.path.join(ROOT, "bravebot_sim", "rl")
+ENV_CLS = BraveBotLocomotionEnv   # overridden to HeadingAwareEnv by --heading
 WP_RADIUS = 0.7            # m — "passed near" tolerance (the policy tracks yaw rate,
                            # not absolute heading, so it threads the aisle with some
                            # lateral drift; area-inspection coverage is the real goal)
@@ -132,7 +133,7 @@ def _scan_frame_fn(env):
 
 def run_patrol(policy, route, on_step=None, max_s=120.0):
     """Drive the route with the policy + navigator; return a patrol report."""
-    env = BraveBotLocomotionEnv(episode_s=1e9, randomize=False)
+    env = ENV_CLS(episode_s=1e9, randomize=False)
     obs, _ = env.reset(seed=0)
     nav = WaypointNavigator(route)
     frame = _scan_frame_fn(env)
@@ -159,23 +160,33 @@ def run_patrol(policy, route, on_step=None, max_s=120.0):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--champion", action="store_true", help="use policy_champion")
+    ap.add_argument("--champion", action="store_true", help="use policy_champion (40-d)")
+    ap.add_argument("--heading", action="store_true",
+                    help="use the heading-aware policy (42-d) — holds heading, full route")
     ap.add_argument("--onnx", action="store_true")
     ap.add_argument("--view", action="store_true", help="live MuJoCo viewer (mjpython)")
     ap.add_argument("--render", metavar="OUT.mp4", help="offscreen-render a patrol clip")
     ap.add_argument("--secs", type=float, default=42.0, help="patrol duration for --render")
     ap.add_argument("--check", action="store_true", help="headless self-test")
     args = ap.parse_args()
-    tag = "policy_champion" if args.champion else "policy"
+    global ENV_CLS
+    if args.heading:
+        from bravebot_sim.rl.heading_env import HeadingAwareEnv
+        ENV_CLS = HeadingAwareEnv
+        tag = "policy_heading"
+        # the heading-aware policy holds heading, so it drives the FULL out-and-back
+        # inspection round (forward sweep + return) cleanly.
+        route = [*facility.WAYPOINTS, facility.DOCK]
+    else:
+        tag = "policy_champion" if args.champion else "policy"
+        # the yaw-rate-only policy drifts, so a forward-only sweep down the aisle
+        # (anomalies at x≈1.8–6.6) avoids the turnaround it can't do cleanly.
+        route = [(0.0, 0.0), (2.0, 0.0), (4.0, 0.0), (6.3, 0.0)]
     policy = load_policy(tag, args.onnx)
-    # Forward-only inspection pass down the aisle (anomalies sit at x≈1.8–6.6). A full
-    # out-and-back would force a turnaround the heading-drifting policy can't do
-    # cleanly; one forward sweep covers every anomaly and stays stable.
-    route = [(0.0, 0.0), (2.0, 0.0), (4.0, 0.0), (6.3, 0.0)]
 
     if args.render:
         import imageio.v3 as iio
-        env = BraveBotLocomotionEnv(episode_s=1e9, randomize=False)
+        env = ENV_CLS(episode_s=1e9, randomize=False)
         obs, _ = env.reset(seed=0)
         nav = WaypointNavigator(route)
         frame_fn = _scan_frame_fn(env)
@@ -211,7 +222,7 @@ def main():
     if args.view:
         import time
         from mujoco import viewer as mj_viewer   # avoid rebinding module-level `mujoco`
-        env = BraveBotLocomotionEnv(episode_s=1e9, randomize=False)
+        env = ENV_CLS(episode_s=1e9, randomize=False)
         obs, _ = env.reset(seed=0)
         nav = WaypointNavigator(route)
         print("RL inspection patrol — watch the legged robot walk the aisle.")

@@ -44,9 +44,18 @@ wheel-legged BraveBot (modified LimX TRON 1) on full MuJoCo rigid-body physics.
 - `renders/rl_robust.mp4` — RL push recovery: the champion drives while absorbing
   5/5 lateral/longitudinal shoves at 130–150 N (above its 30–100 N training range).
 
-## Known limitation / next big lever
-The locomotion policy tracks commanded yaw *rate*, not absolute heading (it has no
-heading observation), so it threads the aisle with some lateral drift — area
-coverage works, survey-grade path-tracking does not. The clean fix is a
-**heading-aware policy** (add a heading-error observation + retrain), the one
-remaining large quality lever, left as a deliberate future change.
+- **Heading-aware policy → the rotation drift is fixed.** The 40-d champion tracks
+  commanded yaw *rate*, not absolute heading, so it drifts (~53° off a straight
+  command) and can't cleanly traverse the patrol. The new
+  [`HeadingAwareEnv`](bravebot_sim/rl/heading_env.py) adds a heading-error
+  observation (42-d obs) + a heading-hold reward; trained on its own track
+  (`rl_train.py --heading`, champion untouched), the resulting policy holds heading
+  (~5° drift), tracks turns to ~1°, **walks the full out-and-back inspection round
+  (9/9 waypoints, 5/5 anomalies, 0 falls), and still survives 130–150 N shoves**
+  ([renders/rl_patrol_heading.mp4](renders/rl_patrol_heading.mp4)). Training was
+  still converging at the time of writing — the champion remains the protected
+  shipped policy; this is a strictly-better-navigating sibling on its own track.
+
+## Next lever
+Promote the heading-aware policy to flagship once its training converges and its
+40-d tooling (`rl_view`, `rl_play`) is ported to the 42-d observation.
