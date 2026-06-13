@@ -31,6 +31,16 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 3: moderate-splay(17°cap)+waist run FINISHED clean — robust, good tracking
+  (fwd 0.11, turn 0.20, 0 falls), sane velocities, moderate ±22° splay (NOT splits),
+  eval 1630 (keep-best worked, dodged a 20.5M PPO hiccup). Snapshot = policy_v3.
+  Remaining cosmetic issue: constant -35° TORSO TILT (waist leans). Diagnosed: CoM
+  is centered (+0.5mm) and tilt is identical across seeds -> spurious learned offset,
+  NOT needed. Relaunched (pid 64073, 20M) with strong waist-upright penalty
+  (-0.25 -> -0.8) to straighten the torso while keeping the moderate splay for roll.
+  NEXT: check torso upright + still robust; if good -> SHOWCASE (render GIF, relaunch
+  viewer, maybe refresh gallery). Then diversify backlog (don't only do posture):
+  code-review workflow, RL-driven patrol, tests, terrain/DR.
 - cycle 2: capped-0.16+waist run went DEGENERATE (waist saturated +52°, base_vel
   23.9 m/s exploit, ep_len stuck ~430, eval crashed to -8000). Key insight: the
   waist only shifts CoM within a NARROW base; splay actually WIDENS the support —

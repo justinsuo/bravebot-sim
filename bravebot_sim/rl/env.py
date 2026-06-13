@@ -219,7 +219,7 @@ class BraveBotLocomotionEnv(gym.Env):
         # left free (it saturated and the base velocity blew up).
         p_pose = (-0.05 * float(np.sum(leg_dev[PITCHKNEE_IDX] ** 2))
                   - 0.03 * float(np.sum(leg_q[ABAD_IDX] ** 2)))
-        p_waist = -0.25 * float(self.data.qpos[self._waist_qadr]) ** 2
+        p_waist = -0.8 * float(self.data.qpos[self._waist_qadr]) ** 2   # strong: torso upright
         over_hi = np.clip(leg_q - (LEG_UPPER - 0.1), 0, None)
         over_lo = np.clip((LEG_LOWER + 0.1) - leg_q, 0, None)
         p_limit = -1.0 * float(np.sum(over_hi ** 2 + over_lo ** 2))            # limit barrier
