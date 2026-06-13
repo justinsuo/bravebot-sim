@@ -6,4 +6,3 @@ renders/patrol/
 .DS_Store
 bravebot_sim/rl/policy.zip
 renders/_*.png
-renders/gait.mp4

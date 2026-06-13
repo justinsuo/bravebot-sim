@@ -6,12 +6,25 @@ BraveBot is built on a modified **LimX Dynamics TRON 1** (WF_TRON1A) base and
 carries a four-sensor inspection payload (acoustic · thermal · gas · visual)
 with on-edge AI.
 
-This repo turns the marketing-site concept into a runnable robot: a complete
-robot description (MJCF + URDF), procedurally generated component meshes, and a
-MuJoCo-based Python library to drive it, patrol a facility, and simulate sensor
-coverage and anomaly detection.
+This repo turns the marketing-site concept into a runnable robot: a faithful
+**LimX Dynamics WF_TRON1A** physics model (real inertials, joint limits, actuator
+specs, gripped tires), a MuJoCo simulation library, **real rigid-body balance
+control**, and an **RL-trained locomotion policy** that walks, turns, strafes,
+and recovers from shoves — plus the four-sensor inspection patrol it was built for.
 
-![BraveBot patrolling a data-center aisle](renders/hero_patrol.png)
+## Demos
+
+| Learned RL locomotion — walk · turn · strafe · **push recovery** | Real-physics balance + shove recovery |
+|---|---|
+| ![RL policy](docs/media/rl_v2.gif) | ![physics balance](docs/media/physics.gif) |
+| **Autonomous inspection patrol** (kinematic) | **Balance-assisted legged gait** |
+| ![patrol](docs/media/patrol.gif) | ![gait](docs/media/gait.gif) |
+
+<sub>Full-resolution clips: [rl_walk_v2.mp4](renders/rl_walk_v2.mp4) · [physics.mp4](renders/physics.mp4) · [patrol.mp4](renders/patrol.mp4) · [gait.mp4](renders/gait.mp4)</sub>
+
+| ![studio](renders/hero_studio.png) | ![in the aisle](renders/hero_patrol.png) | ![collision](renders/physics_collision.png) |
+|---|---|---|
+| The robot + four-sensor head | On patrol in a data-center aisle | Full-body collision (it lands *on* the floor) |
 
 ---
 
@@ -186,23 +199,27 @@ learned policy. Two tracks are provided:
   balance keeps the robot upright while the legs run a visible alternating
   stepping cycle on top — march in place, step forward/back, step-turn. Honest
   scope: balance-assisted, runs today, no training. `python scripts/render_gait_video.py`.
-- **Learned locomotion** ([`bravebot_sim/rl/`](bravebot_sim/rl/)): a Gymnasium
-  env + PPO trainer that learns to coordinate the legs and wheels to track a
-  commanded `(vx, vy, yaw)` while upright — the real path to robust walking and
-  clean rotation, the same approach the TRON 1 uses. The env is verified
-  learnable (reward climbs); full convergence is a GPU job. See
-  [`bravebot_sim/rl/README.md`](bravebot_sim/rl/README.md).
+- **Learned locomotion** ([`bravebot_sim/rl/`](bravebot_sim/rl/)) — **trained and
+  working** (the [RL gif above](docs/media/rl_v2.gif)). A Gymnasium env + PPO
+  policy learns to coordinate the legs and wheels to track a commanded
+  `(vx, vy, yaw)` while upright — the real path to robust walking and clean
+  rotation, the same approach the real TRON 1 uses. The shipped policy (25M steps,
+  reward → 3120, full 16 s episodes) handles **forward / back / turn / arc /
+  strafe** (~0.15 m/s tracking, 0 falls) and **recovers from 140 N forward /
+  110 N lateral shoves** — thanks to domain randomization (mass ±20%, friction
+  ±40%, floor tilt, sensor noise, latency) + random pushes + a curriculum during
+  training. See [`bravebot_sim/rl/README.md`](bravebot_sim/rl/README.md).
 
 ```bash
 pip install -r requirements-rl.txt
-python scripts/rl_train.py --steps 60000 --envs 6     # CPU sanity (reward rises)
-python scripts/rl_train.py --steps 5_000_000 --envs 16  # real run, on a GPU
-python scripts/rl_play.py --cmd 0.6 0 0 --video renders/rl_walk.mp4
+mjpython scripts/rl_view.py                # drive the trained policy live (arrows = vx / yaw)
+python  scripts/rl_play.py --cmd 0 0 0.6   # e.g. turn in place
+python  scripts/rl_train.py --steps 25_000_000 --envs 16    # (re)train from scratch
+python  scripts/rl_train.py --resume --steps 50_000_000     # keep training a checkpoint
 ```
 
-The control approach was designed and adversarially reviewed via multi-agent
-workflows; the confirmed review findings (station-keeping, turn/roll limits,
-NaN-safety) are fixed in the controller.
+The control approach (balance controller + RL env design) was developed and
+adversarially reviewed via multi-agent workflows.
 
 ---
 
