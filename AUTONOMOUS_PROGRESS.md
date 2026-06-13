@@ -31,6 +31,14 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 23: rewrote the stale RL README (bravebot_sim/rl/README.md). It still described
+  an EARLY state — "obs 33-d / action 8-d", and listed domain randomization, curriculum,
+  and sim-to-real hardening as FUTURE steps (all long done). Updated to the real state:
+  obs 40-d (42-d heading) / action 9-d incl. the waist joint; DR + pushes + curriculum +
+  robustness-aware keep-best + correct curriculum-resume; the two shipped policies
+  (champion 40-d robust, heading 42-d holds-heading + full patrol) + the historical
+  snapshots; and the full tool set (rl_view/rl_play/rl_patrol --heading/--scene,
+  robustness_shootout). Doc-only; no code/behavior change. Project remains complete + clean.
 - cycle 22: repo-state audit + cleanup (delivered state is tidy). Verified: training idle,
   all README demo links resolve, tests 10/10, both policies intact. Fixed churn: tracked
   deployment onnx now correct (policy.onnx==champion, policy_heading.onnx==shipped v1);
