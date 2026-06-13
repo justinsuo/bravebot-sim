@@ -31,6 +31,29 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 6: *** FIXED ALL 13 CODE-REVIEW BUGS (adversarially verified) ***. The
+  review workflow (w1mmjo6ot) confirmed 13 real bugs; I fixed every one, then ran an
+  adversarial verification workflow (w96q5hy7z) that re-ran each repro on the patched
+  code — it CAUGHT 2 of my fixes as incomplete (the _global resume set_attr only hit
+  the Monitor wrapper; the turn-lock re-arm gate was still unsatisfiable for opposite
+  turns). Re-fixed both and a 2nd verification (wt67t271g) returned all_clear.
+  HIGH: (1) curriculum _global now baked into the env constructor via thunk() so DR
+  continues across --resume (verified end-to-end: resumed dr_ramp=1.0, fresh=0.0) —
+  this was silently de-randomizing every resumed run for ~4.5M steps. (2) turn governor
+  = proactive budget + DIRECTIONAL lock (block only the lean-worsening turn, always
+  allow the releveling one): upright in all 6 scenarios 60s+ AND opposite turns
+  execute (no permanent freeze, no ratchet-to-tip). (3) kinematic stance now per-joint
+  mirrored (both wheels seat; mass 59.5->34kg). MED: Saver no longer bursts ~50 saves
+  on resume. LOW: NaN guard before reward, kinematic inertials, 40/9 docstrings,
+  removed dead base_z/u, --check --walk actually walks. Physics XML byte-identical.
+  tests 7/7, eval_balance PASS. Killed the de-randomized refine run; restored
+  policy{,_best}<-champion; RELAUNCHED a refine run from the champion WITH the fix
+  (first run with TRUE DR continuation — eval starts ~1720 under full DR, ep_rew
+  3600->3300 as expected since DR is harder). Also fixed a .gitignore slip (untracked
+  ~21MB of stray .zip snapshots + junk log; amended+force-pushed clean). NEXT: let the
+  DR-hardened run harden; PROMOTE only if eval beats champion 1757 AND robust; then
+  diversify (RL-driven inspection patrol / terrain). Watch the --envs-16 resume rule
+  (SB3 asserts num_envs matches the checkpoint).
 - cycle 5: PROMOTED refined policy (eval 1684->1757). Diversified: (a) added
   tests/test_sim.py (7 tests, all pass: meshes, both MJCF compile + sane mass,
   URDF connectivity, kinematic drive+scan, physics balance, RL env shapes+
