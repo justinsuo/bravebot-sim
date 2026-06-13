@@ -31,6 +31,18 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 11: combined-eval continuation FINISHED (37.5M->49.5M) best 3462.8 < champion
+  3469.5 -> not promoted; the robustness-aware metric is now also plateauing (~3460-3470),
+  so the policy is near its ceiling for the current 40-d/no-heading architecture. Started
+  the END-DELIVERABLE prep while the champion is strong: added an OFFSCREEN RENDER mode to
+  scripts/rl_patrol.py (--render OUT.mp4) and rendered renders/rl_patrol.mp4 — the new
+  champion walks the inspection round + scans 4/5 anomalies, NO fall (the improved policy
+  navigates the route far better than the original — completes it in ~13s vs barely moving
+  before). Fixed a subtle relaunch bug: continuations were resuming from the run's last
+  shipped best (3462.8) instead of the cross-run champion (3469.5); now restore
+  policy.zip<-champion before each relaunch. Relaunched from the champion. NEXT: keep
+  one run going (promote on combined>3469.5); finish END deliverable (gallery+README+
+  summary, add patrol clip) when ~10h; heading-aware policy remains the one big lever left.
 - cycle 10: *** ROBUSTNESS-AWARE TRAINING IS WORKING — promoted a STRICTLY BETTER
   champion ***. The first run under the new combined (clean+DR) keep-best (cycle 9)
   improved past the champion. Apples-to-apples on the exact in-trainer protocol PLUS an

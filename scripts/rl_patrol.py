@@ -148,20 +148,57 @@ def main():
     ap.add_argument("--champion", action="store_true", help="use policy_champion")
     ap.add_argument("--onnx", action="store_true")
     ap.add_argument("--view", action="store_true", help="live MuJoCo viewer (mjpython)")
+    ap.add_argument("--render", metavar="OUT.mp4", help="offscreen-render a patrol clip")
+    ap.add_argument("--secs", type=float, default=42.0, help="patrol duration for --render")
     ap.add_argument("--check", action="store_true", help="headless self-test")
     args = ap.parse_args()
     tag = "policy_champion" if args.champion else "policy"
     policy = load_policy(tag, args.onnx)
     route = [*facility.WAYPOINTS, facility.DOCK]   # start forward into the aisle, end at dock
 
+    if args.render:
+        import imageio.v3 as iio
+        env = BraveBotLocomotionEnv(episode_s=1e9, randomize=False)
+        obs, _ = env.reset(seed=0)
+        nav = WaypointNavigator(route)
+        frame_fn = _scan_frame_fn(env)
+        renderer = mujoco.Renderer(env.model, height=720, width=1280)
+        cam = mujoco.MjvCamera()
+        mujoco.mjv_defaultFreeCamera(env.model, cam)
+        cam.distance, cam.elevation, cam.azimuth = 4.4, -17, 35
+        look = [0.0, 0.0, 0.55]
+        fps = 25
+        cap_every = max(1, round(env.control_hz / fps))
+        frames, detected = [], {}
+        for k in range(int(args.secs * env.control_hz)):
+            x, y, yaw = _pose(env)
+            env._cmd[:] = nav.command(x, y, yaw)
+            obs, _, term, _, _ = env.step(policy(obs))
+            for r in scan_anomalies(frame_fn, facility.ANOMALIES):
+                if r.confidence > 0.5:
+                    detected[r.target] = 1
+            if k % cap_every == 0:
+                look[0] += 0.1 * (x - look[0])
+                look[1] += 0.1 * (y - look[1])
+                cam.lookat[:] = look
+                renderer.update_scene(env.data, cam)
+                frames.append(renderer.render())
+            if term or nav.done:
+                break
+        os.makedirs(os.path.dirname(args.render), exist_ok=True)
+        iio.imwrite(args.render, frames, fps=fps, codec="libx264",
+                    output_params=["-pix_fmt", "yuv420p"])
+        print(f"wrote {args.render}  ({len(frames)} frames, {len(detected)}/5 anomalies seen)")
+        return
+
     if args.view:
         import time
-        import mujoco.viewer
+        from mujoco import viewer as mj_viewer   # avoid rebinding module-level `mujoco`
         env = BraveBotLocomotionEnv(episode_s=1e9, randomize=False)
         obs, _ = env.reset(seed=0)
         nav = WaypointNavigator(route)
         print("RL inspection patrol — watch the legged robot walk the aisle.")
-        with mujoco.viewer.launch_passive(env.model, env.data) as v:
+        with mj_viewer.launch_passive(env.model, env.data) as v:
             while v.is_running():
                 t0 = time.time()
                 x, y, yaw = _pose(env)
