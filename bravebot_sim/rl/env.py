@@ -41,7 +41,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 MODEL = os.path.normpath(os.path.join(_HERE, "..", "..", "description", "mjcf", "bravebot_physics.xml"))
 
 LEG_JOINTS = ["abad_L", "hip_L", "knee_L", "abad_R", "hip_R", "knee_R"]
-LEG_RANGE = np.array([0.4, 0.6, 0.6, 0.4, 0.6, 0.6])
+LEG_RANGE = np.array([0.16, 0.6, 0.6, 0.16, 0.6, 0.6])  # ab/ad capped -> use waist for roll
 WHEEL_TORQUE = 40.0
 WAIST_RANGE = 0.9        # rad — torso roll action scale (active roll control)
 WHEEL_RADIUS = float(R.WHEEL_RADIUS)

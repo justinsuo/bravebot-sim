@@ -113,4 +113,4 @@ DR_DEFAULT = dict(
     gain_pct=0.20,          # ±20% actuator strength
     gravity_tilt_rad=0.05,  # ±2.9° floor tilt
 )
-PUSH_DEFAULT = dict(force_n=(40.0, 130.0), duration_s=0.1, interval_s=(2.0, 5.0))
+PUSH_DEFAULT = dict(force_n=(30.0, 100.0), duration_s=0.1, interval_s=(2.0, 5.0))
