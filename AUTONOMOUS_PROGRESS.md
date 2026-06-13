@@ -31,6 +31,18 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 10: *** ROBUSTNESS-AWARE TRAINING IS WORKING — promoted a STRICTLY BETTER
+  champion ***. The first run under the new combined (clean+DR) keep-best (cycle 9)
+  improved past the champion. Apples-to-apples on the exact in-trainer protocol PLUS an
+  independent 3-seed robustness cross-check, the new best DOMINATES on every axis:
+  clean 1756.9 vs 1745.2, dr 1712.6 vs 1696.6, combined 3469.5 vs 3441.9, robust_avg(3-
+  seed) 1670.2 vs 1653.8 — and 0% falls (track_err 0.109 vs 0.120 under DR+push). No
+  trade-off this time: robustness-aware training RECOVERED clean perf (~1757, matching
+  the original clean champion) WHILE improving robustness. PROMOTED to champion (prev
+  champion preserved as policy_drhardened, original clean as policy_v5_clean). Relaunched
+  from the new champion to keep climbing combined. This validates the cycle-9 metric
+  change: the deployment-relevant objective is NOT exhausted and yields real gains.
+  NEXT: promote on combined>3469.5; then heading-aware policy OR END deliverable (~10h).
 - cycle 9: *** ROBUSTNESS-AWARE EVAL + PROMOTED a genuinely more-robust champion ***.
   The cycle-8 continuation FINISHED (34M->46M) at clean eval 1741 (a PPO hiccup to 100
   at 44.5M) — clean-eval refine is now DEGRADING over 3 runs, so I stopped chasing it.
