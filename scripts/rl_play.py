@@ -28,13 +28,13 @@ from bravebot_sim.rl.env import BraveBotLocomotionEnv  # noqa: E402
 RL_DIR = os.path.join(ROOT, "bravebot_sim", "rl")
 
 
-def load_policy(use_onnx: bool):
+def load_policy(use_onnx: bool, tag: str = "policy"):
     if use_onnx:
         import onnxruntime as ort
-        sess = ort.InferenceSession(os.path.join(RL_DIR, "policy.onnx"))
+        sess = ort.InferenceSession(os.path.join(RL_DIR, f"{tag}.onnx"))
         return lambda obs: sess.run(None, {"obs": obs[None].astype(np.float32)})[0][0]
     from stable_baselines3 import PPO
-    model = PPO.load(os.path.join(RL_DIR, "policy"), device="cpu")
+    model = PPO.load(os.path.join(RL_DIR, tag), device="cpu")
     return lambda obs: model.predict(obs, deterministic=True)[0]
 
 
@@ -44,11 +44,18 @@ def main():
                     metavar=("VX", "VY", "YAW"))
     ap.add_argument("--seconds", type=float, default=10.0)
     ap.add_argument("--onnx", action="store_true")
+    ap.add_argument("--heading", action="store_true",
+                    help="use the heading-aware 42-d policy (policy_heading)")
     ap.add_argument("--video", default=None)
     args = ap.parse_args()
 
-    policy = load_policy(args.onnx)
-    env = BraveBotLocomotionEnv(episode_s=args.seconds, randomize=False)
+    if args.heading:
+        from bravebot_sim.rl.heading_env import HeadingAwareEnv as EnvCls
+        tag = "policy_heading"
+    else:
+        EnvCls, tag = BraveBotLocomotionEnv, "policy"
+    policy = load_policy(args.onnx, tag)
+    env = EnvCls(episode_s=args.seconds, randomize=False)
     obs, _ = env.reset(seed=0)
     env._cmd[:] = args.cmd     # fixed command
 

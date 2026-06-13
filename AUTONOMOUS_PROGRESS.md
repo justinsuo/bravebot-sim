@@ -31,6 +31,18 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 17: INTEGRATED the heading-aware policy across all interactive tooling. The
+  heading --resume run finished (best 3452.3 < 3454.9, plateaued; policy_heading
+  unchanged) — both tracks firmly converged. Ported rl_view.py and rl_play.py to take
+  --heading (load policy_heading + HeadingAwareEnv), so all three RL tools (rl_view,
+  rl_play, rl_patrol) now drive either policy; the default 40-d champion path is
+  untouched. Verified: rl_play --heading forward |vx err|=0.06 / turn clean / 0 falls;
+  default champion path still works. Updated README quick-start with the --heading
+  commands. The heading policy is now a fully first-class, deployable option (its onnx
+  is tracked). Relaunched a heading --resume continuation (keep one run going; both
+  plateaued — substantive roadmap is essentially complete). NEXT: maintenance/polish;
+  flagship promotion (swap default to heading) is now trivial if desired since all
+  tooling supports it.
 - cycle 16: heading-aware run CONVERGED + finalized. It peaked at combined 3454.9 (~21M)
   then late-drifted (30M -> 2995, the usual late-PPO instability), so keep-best correctly
   retained the 21M policy -> policy_heading.zip = that best (matches the cycle-15 demo

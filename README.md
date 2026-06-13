@@ -234,11 +234,13 @@ learned policy. Two tracks are provided:
 ```bash
 pip install -r requirements-rl.txt
 mjpython scripts/rl_view.py                # drive the trained policy live (arrows = vx / yaw)
-python  scripts/rl_play.py --cmd 0 0 0.6   # e.g. turn in place
-python  scripts/rl_patrol.py --champion    # legged inspection round (headless report)
+mjpython scripts/rl_view.py --heading      # ... the heading-aware policy (holds heading)
+python  scripts/rl_play.py --cmd 0 0 0.6   # e.g. turn in place  (--heading for the 42-d policy)
+python  scripts/rl_patrol.py --heading     # FULL legged inspection round (9/9, 5/5 anomalies)
+python  scripts/rl_patrol.py --champion    # near-aisle sweep with the 40-d champion
 python  scripts/robustness_shootout.py     # compare policies under DR + pushes
-python  scripts/rl_train.py --steps 25_000_000 --envs 16    # (re)train from scratch
-python  scripts/rl_train.py --resume --envs 16              # keep training a checkpoint
+python  scripts/rl_train.py --steps 25_000_000 --envs 16    # (re)train the 40-d champion
+python  scripts/rl_train.py --heading --steps 30_000_000 --envs 16   # train the heading policy
 ```
 
 The control approach (balance controller + RL env design) was developed and

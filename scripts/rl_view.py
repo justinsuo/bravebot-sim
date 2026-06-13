@@ -30,13 +30,13 @@ RL_DIR = os.path.join(ROOT, "bravebot_sim", "rl")
 UP, DOWN, LEFT, RIGHT, ENTER = 265, 264, 263, 262, 257
 
 
-def load_policy(use_onnx):
+def load_policy(use_onnx, tag="policy"):
     if use_onnx:
         import onnxruntime as ort
-        s = ort.InferenceSession(os.path.join(RL_DIR, "policy.onnx"))
+        s = ort.InferenceSession(os.path.join(RL_DIR, f"{tag}.onnx"))
         return lambda o: s.run(None, {"obs": o[None].astype(np.float32)})[0][0]
     from stable_baselines3 import PPO
-    m = PPO.load(os.path.join(RL_DIR, "policy"), device="cpu")
+    m = PPO.load(os.path.join(RL_DIR, tag), device="cpu")
     return lambda o: m.predict(o, deterministic=True)[0]
 
 
@@ -44,10 +44,17 @@ def main():
     import mujoco.viewer
     ap = argparse.ArgumentParser()
     ap.add_argument("--onnx", action="store_true")
+    ap.add_argument("--heading", action="store_true",
+                    help="drive the heading-aware 42-d policy (policy_heading)")
     args = ap.parse_args()
 
-    policy = load_policy(args.onnx)
-    env = BraveBotLocomotionEnv(episode_s=1e9, randomize=False)
+    if args.heading:
+        from bravebot_sim.rl.heading_env import HeadingAwareEnv as EnvCls
+        tag = "policy_heading"
+    else:
+        EnvCls, tag = BraveBotLocomotionEnv, "policy"
+    policy = load_policy(args.onnx, tag)
+    env = EnvCls(episode_s=1e9, randomize=False)
     obs, _ = env.reset(seed=0)
     cmd = np.zeros(3, np.float32)
     env._cmd[:] = cmd
