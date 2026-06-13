@@ -31,6 +31,17 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 28: CAPABILITY-vs-DOCS honesty audit found an OVERCLAIM. Tested lateral strafe
+  (the user's "walk side to side"): BOTH policies stay upright but DON'T strafe — for a
+  vy=0.2 command they move only ~0.01 m/s laterally (vy tracking error = the full
+  command; they ignore vy). Root cause is MORPHOLOGICAL: the wheels share one axle and
+  can't roll sideways, so true strafing needs leg-stepping the balance policy doesn't do
+  — it correctly learned to ignore vy and keep its wheels planted. The docs claimed
+  "strafe" in 4 places (overclaim). Fixed: README + rl/README now say walk/back/turn/arc
+  (the real motion envelope) and a note explains lateral motion is limited by the
+  single-axle wheels (sideways repositioning = turn-then-drive). Honesty fix, no false
+  capability claims. Forward/back + turn + arc are genuinely delivered; the env still
+  exposes vy harmlessly. Tests 11/11.
 - cycle 27: end-to-end check that the DOCUMENTED user-facing commands actually run (doc
   vs reality). All good: scripts/patrol_demo.py (detects anomalies, writes frames),
   scripts/view.py --check (kinematic self-test OK), scripts/export_manifest.py

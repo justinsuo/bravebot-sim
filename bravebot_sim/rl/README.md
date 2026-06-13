@@ -23,7 +23,7 @@ ships an Isaac-trained policy. Two policies are trained and shipped here (below)
 
 | Policy | Obs | What it does |
 |--------|-----|--------------|
-| `policy_champion.onnx` (also `policy.onnx`) | 40 | Robust default. Walk / back / turn / arc / strafe, 0 falls; **survives 130–150 N shoves and ~±6° slopes**. Tracks yaw *rate* (drifts off absolute heading). |
+| `policy_champion.onnx` (also `policy.onnx`) | 40 | Robust default. Walk / back / turn / arc, 0 falls; **survives 130–150 N shoves and ~±6° slopes**. Tracks yaw *rate* (drifts off absolute heading). |
 | `policy_heading.onnx` | 42 | **Holds heading** (~5° drift on a straight command vs ~53° for the champion), tracks turns to ~1°, walks the **full out-and-back inspection round** (9/9 waypoints, 5/5 anomalies), equally shove/slope-robust. The fix for the rotation drift. |
 | `policy_drhardened`, `policy_v2_25M`, `policy_v3`, `policy_v4`, `policy_v5_clean` | 40 | Historical snapshots kept for reference. |
 
@@ -51,6 +51,11 @@ them the way the TRON 1 `isaacgym/policy.onnx` is loaded, or drop into
 
 - **Compute:** these policies were trained for tens of millions of env steps; a
   60k-step CPU run only validates that the env + reward are learnable.
+- **Lateral motion (vy):** the env exposes a `vy` command, but the robot rolls on a
+  single wheel axle (the wheels can't roll sideways), so true sideways *strafing*
+  isn't achievable without leg-stepping — the balance policy learns to ignore `vy`
+  and keep its wheels planted. Forward/back, turning, and arcs are the real motion
+  envelope; sideways repositioning is done by turn-then-drive.
 - **Sim-to-real:** observation noise, action latency, and dynamics randomization
   are already in the training loop; the keep-best metric explicitly rewards
   robustness under that randomization.

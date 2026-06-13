@@ -9,12 +9,12 @@ with on-edge AI.
 This repo turns the marketing-site concept into a runnable robot: a faithful
 **LimX Dynamics WF_TRON1A** physics model (real inertials, joint limits, actuator
 specs, gripped tires), a MuJoCo simulation library, **real rigid-body balance
-control**, and an **RL-trained locomotion policy** that walks, turns, strafes,
+control**, and an **RL-trained locomotion policy** that walks, turns, drives arcs,
 and recovers from shoves — plus the four-sensor inspection patrol it was built for.
 
 ## Demos
 
-| Learned RL locomotion — walk · turn · strafe · **push recovery** | Real-physics balance + shove recovery |
+| Learned RL locomotion — walk · turn · arc · **push recovery** | Real-physics balance + shove recovery |
 |---|---|
 | ![RL policy](docs/media/rl_v2.gif) | ![physics balance](docs/media/physics.gif) |
 | **Autonomous inspection patrol** (kinematic) | **Balance-assisted legged gait** |
@@ -204,7 +204,7 @@ learned policy. Two tracks are provided:
   policy learns to coordinate the legs, wheels, and an actuated waist-roll joint to
   track a commanded `(vx, vy, yaw)` while upright — the real path to robust walking
   and clean rotation, the same approach the real TRON 1 uses. The shipped champion
-  (~37M steps, full 16 s episodes) handles **forward / back / turn / arc / strafe**
+  (~37M steps, full 16 s episodes) handles **forward / back / turn / arc**
   (0 falls) and **survives 130–150 N shoves** ([rl_robust.mp4](renders/rl_robust.mp4),
   5/5 survived) — thanks to domain randomization (mass ±20%, friction ±40%, floor
   tilt, sensor noise, latency) + random pushes + a curriculum. The keep-best
