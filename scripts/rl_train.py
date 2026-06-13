@@ -55,6 +55,14 @@ def eval_score(model, env, steps=300):
     return total
 
 
+def combined_eval(model, clean_env, dr_env):
+    """Robustness-aware keep-best metric: clean tracking + tracking under FULL domain
+    randomization + pushes. The clean-only score can't see robustness (it plateaued
+    while DR-hardened policies kept improving disturbance-tracking), so the deployment-
+    relevant metric blends both. Higher is better."""
+    return eval_score(model, clean_env) + eval_score(model, dr_env)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--steps", type=int, default=20_000_000)
@@ -105,7 +113,10 @@ def main():
                     policy_kwargs=dict(net_arch=[512, 256, 128]), device="cpu")
 
     from bravebot_sim.rl.env import BraveBotLocomotionEnv
-    eval_env = BraveBotLocomotionEnv(randomize=False)   # deterministic eval for keep-best
+    eval_env = BraveBotLocomotionEnv(randomize=False)   # clean deterministic eval
+    dr_eval_env = BraveBotLocomotionEnv(randomize=True)  # robustness eval (DR + pushes)
+    dr_eval_env._global = 10_000_000                     # force DR ramp fully ON
+    keepbest = lambda m: combined_eval(m, eval_env, dr_eval_env)
 
     class Saver(BaseCallback):
         def __init__(self, every):
@@ -134,8 +145,8 @@ def main():
                     export_onnx(model, ONNX)
                 except Exception as e:
                     print("onnx export skipped:", e)
-                # keep-best by evaluation (not by last checkpoint)
-                score = eval_score(model, eval_env)
+                # keep-best by robustness-aware evaluation (not by last checkpoint)
+                score = keepbest(model)
                 if score > self.best:
                     self.best = score
                     model.save(BEST)
@@ -155,11 +166,11 @@ def main():
     model.learn(total_timesteps=args.steps, callback=Saver(args.save_every),
                 reset_num_timesteps=not args.resume, progress_bar=False)
     # ship the BEST-by-eval policy (final is often not the strongest)
-    final_score = eval_score(model, eval_env)
+    final_score = keepbest(model)
     if os.path.exists(BEST + ".zip"):
         from stable_baselines3 import PPO as _PPO
         best_model = _PPO.load(BEST, device="cpu")
-        best_score = eval_score(best_model, eval_env)
+        best_score = keepbest(best_model)
         winner, label = (model, "final") if final_score >= best_score else (best_model, "best-checkpoint")
         print(f"shipping {label}: final={final_score:.1f} vs best={best_score:.1f}")
         winner.save(ZIP)

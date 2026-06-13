@@ -31,6 +31,23 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 9: *** ROBUSTNESS-AWARE EVAL + PROMOTED a genuinely more-robust champion ***.
+  The cycle-8 continuation FINISHED (34M->46M) at clean eval 1741 (a PPO hiccup to 100
+  at 44.5M) — clean-eval refine is now DEGRADING over 3 runs, so I stopped chasing it.
+  Resolved cycle-7's open question with a balanced clean+DR comparison (same scoring):
+  champion clean 1755.5 / robustDR 1580.4 / combined 3335.8 vs DR-hardened clean 1741.0
+  / robustDR 1666.5 / combined 3407.5 — the DR-hardened policy is 5.4% more robust
+  under disturbance (0% falls, equal survival) for 0.8% clean cost = clearly better on
+  the DEPLOYMENT metric. Root fix: made the keep-best eval ROBUSTNESS-AWARE
+  (combined_eval = clean + DR-perturbed in scripts/rl_train.py) — the clean-only metric
+  structurally couldn't see robustness (it plateaued while DR-tracking kept improving).
+  Under the corrected metric the DR-hardened policy wins, so PROMOTED it to champion
+  (snapshotted the old clean champion as policy_v5_clean.onnx). Relaunched training with
+  the robustness-aware keep-best from the new champion — now optimizing the
+  deployment-relevant metric (which, unlike clean eval, is NOT exhausted). Suite 9/9.
+  This realizes the payoff of the cycle-6 curriculum-resume fix: a measurably more
+  sim-to-real-robust policy is now the shipped champion. NEXT: let it improve combined;
+  promote on combined>3407; then heading-aware policy OR END deliverable (~10h).
 - cycle 8: built the RL-POLICY-DRIVEN INSPECTION PATROL (scripts/rl_patrol.py): the
   trained locomotion policy balances+drives while a waypoint navigator (picks
   forward/reverse to avoid an impossible 180deg spin; closes the heading loop
