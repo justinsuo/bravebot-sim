@@ -31,6 +31,13 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 5: PROMOTED refined policy (eval 1684->1757). Diversified: (a) added
+  tests/test_sim.py (7 tests, all pass: meshes, both MJCF compile + sane mass,
+  URDF connectivity, kinematic drive+scan, physics balance, RL env shapes+
+  determinism, gait) — regression coverage. (b) launched a code-review workflow
+  (w1mmjo6ot) to find bugs -> INTEGRATE confirmed fixes next cycle. (c) relaunched
+  a refine run (pid 14892, 12M). NEXT: read code-review results, fix confirmed
+  bugs; then RL-driven inspection patrol or terrain/DR.
 - cycle 4: *** NATURAL STANCE ACHIEVED ***. Strong waist-upright penalty (-0.8)
   straightened the torso: policy now stands UPRIGHT (waist ~0) with a moderate ±24°
   stance — not the splits, not tilted. Robust: 0 falls through walk/turn/arc/back +
