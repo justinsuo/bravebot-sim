@@ -41,7 +41,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 MODEL = os.path.normpath(os.path.join(_HERE, "..", "..", "description", "mjcf", "bravebot_physics.xml"))
 
 LEG_JOINTS = ["abad_L", "hip_L", "knee_L", "abad_R", "hip_R", "knee_R"]
-LEG_RANGE = np.array([0.4, 0.6, 0.6, 0.4, 0.6, 0.6])
+LEG_RANGE = np.array([0.22, 0.6, 0.6, 0.22, 0.6, 0.6])  # ab/ad capped: no splits
 WHEEL_TORQUE = 40.0
 WHEEL_RADIUS = float(R.WHEEL_RADIUS)
 STANCE_VEC = np.array([STANCE[j] for j in LEG_JOINTS])
@@ -207,7 +207,11 @@ class BraveBotLocomotionEnv(gym.Env):
         # --- small penalty regularizers (kept << positive shaping) ---
         p_arate = -0.008 * float(np.sum((action - self._prev_action) ** 2))   # smoothness
         p_energy = -0.0003 * float(np.sum(action ** 2))                        # effort
-        p_pose = -0.02 * float(np.sum(leg_dev[PITCHKNEE_IDX] ** 2))            # posture
+        # posture: keep the bent-knee stance AND tuck the legs (penalize ab/ad
+        # splay) so it doesn't do the "splits"; ab/ad still free to lean for strafe
+        # (rewarded by r_lean), but not to splay when standing.
+        p_pose = (-0.30 * float(np.sum(leg_dev[PITCHKNEE_IDX] ** 2))
+                  - 0.35 * float(np.sum(leg_q[ABAD_IDX] ** 2)))
         over_hi = np.clip(leg_q - (LEG_UPPER - 0.1), 0, None)
         over_lo = np.clip((LEG_LOWER + 0.1) - leg_q, 0, None)
         p_limit = -1.0 * float(np.sum(over_hi ** 2 + over_lo ** 2))            # limit barrier
