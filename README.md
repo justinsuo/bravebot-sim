@@ -20,7 +20,7 @@ and recovers from shoves — plus the four-sensor inspection patrol it was built
 | **Autonomous inspection patrol** (kinematic) | **Balance-assisted legged gait** |
 | ![patrol](docs/media/patrol.gif) | ![gait](docs/media/gait.gif) |
 
-<sub>Full-resolution clips: [rl_walk_v2.mp4](renders/rl_walk_v2.mp4) · [physics.mp4](renders/physics.mp4) · [patrol.mp4](renders/patrol.mp4) · [gait.mp4](renders/gait.mp4)</sub>
+<sub>Full-resolution clips: [**rl_patrol.mp4**](renders/rl_patrol.mp4) (RL-policy inspection round) · [**rl_robust.mp4**](renders/rl_robust.mp4) (push recovery, 5/5 shoves @130–150 N) · [rl_walk_v2.mp4](renders/rl_walk_v2.mp4) · [physics.mp4](renders/physics.mp4) · [patrol.mp4](renders/patrol.mp4) · [gait.mp4](renders/gait.mp4)</sub>
 
 | ![studio](renders/hero_studio.png) | ![in the aisle](renders/hero_patrol.png) | ![collision](renders/physics_collision.png) |
 |---|---|---|
@@ -201,25 +201,39 @@ learned policy. Two tracks are provided:
   scope: balance-assisted, runs today, no training. `python scripts/render_gait_video.py`.
 - **Learned locomotion** ([`bravebot_sim/rl/`](bravebot_sim/rl/)) — **trained and
   working** (the [RL gif above](docs/media/rl_v2.gif)). A Gymnasium env + PPO
-  policy learns to coordinate the legs and wheels to track a commanded
-  `(vx, vy, yaw)` while upright — the real path to robust walking and clean
-  rotation, the same approach the real TRON 1 uses. The shipped policy (25M steps,
-  reward → 3120, full 16 s episodes) handles **forward / back / turn / arc /
-  strafe** (~0.15 m/s tracking, 0 falls) and **recovers from 140 N forward /
-  110 N lateral shoves** — thanks to domain randomization (mass ±20%, friction
-  ±40%, floor tilt, sensor noise, latency) + random pushes + a curriculum during
-  training. See [`bravebot_sim/rl/README.md`](bravebot_sim/rl/README.md).
+  policy learns to coordinate the legs, wheels, and an actuated waist-roll joint to
+  track a commanded `(vx, vy, yaw)` while upright — the real path to robust walking
+  and clean rotation, the same approach the real TRON 1 uses. The shipped champion
+  (~37M steps, full 16 s episodes) handles **forward / back / turn / arc / strafe**
+  (0 falls) and **survives 130–150 N shoves** ([rl_robust.mp4](renders/rl_robust.mp4),
+  5/5 survived) — thanks to domain randomization (mass ±20%, friction ±40%, floor
+  tilt, sensor noise, latency) + random pushes + a curriculum. The keep-best
+  checkpoint is selected by a **robustness-aware eval** (clean tracking *plus*
+  tracking under full domain randomization), so the shipped policy is chosen for
+  sim-to-real robustness, not just nominal performance. See
+  [`bravebot_sim/rl/README.md`](bravebot_sim/rl/README.md).
+
+- **RL-driven inspection patrol** ([`scripts/rl_patrol.py`](scripts/rl_patrol.py))
+  — the learned policy balances and drives a full legged inspection round of the
+  cold aisle while the onboard sensors scan for anomalies
+  ([rl_patrol.mp4](renders/rl_patrol.mp4)): a waypoint navigator sets the velocity
+  command (and picks forward/reverse to avoid an impossible 180° spin) on top of the
+  policy. `python scripts/rl_patrol.py --check` runs it headless.
 
 ```bash
 pip install -r requirements-rl.txt
 mjpython scripts/rl_view.py                # drive the trained policy live (arrows = vx / yaw)
 python  scripts/rl_play.py --cmd 0 0 0.6   # e.g. turn in place
+python  scripts/rl_patrol.py --champion    # legged inspection round (headless report)
+python  scripts/robustness_shootout.py     # compare policies under DR + pushes
 python  scripts/rl_train.py --steps 25_000_000 --envs 16    # (re)train from scratch
-python  scripts/rl_train.py --resume --steps 50_000_000     # keep training a checkpoint
+python  scripts/rl_train.py --resume --envs 16              # keep training a checkpoint
 ```
 
 The control approach (balance controller + RL env design) was developed and
-adversarially reviewed via multi-agent workflows.
+adversarially reviewed via multi-agent workflows — a code-review pass found 13 real
+bugs (incl. a curriculum-resume bug that silently disabled domain randomization for
+~4.5M steps of every resumed run); all were fixed and re-verified adversarially.
 
 ---
 
@@ -241,9 +255,12 @@ description/
   mjcf/               bravebot.xml (kinematic) + bravebot_physics.xml (dynamics) + scenes
   urdf/               bravebot.urdf for ROS 2 / Gazebo / RViz
   config/             components.json manifest
-scripts/              build_model · view · patrol_demo · eval_balance ·
-                      render_hero · render_patrol_video · render_physics_video · export_manifest
-renders/              hero stills + patrol & physics videos
+scripts/              build_model · view · patrol_demo · eval_balance · rl_train ·
+                      rl_view · rl_play · rl_patrol · robustness_shootout ·
+                      render_hero · render_patrol_video · render_physics_video ·
+                      render_rl_robust · export_manifest
+tests/                test_sim.py — regression suite (meshes, models, balance, RL env, gait)
+renders/              hero stills + patrol, physics, RL-patrol & push-recovery videos
 ```
 
 ## Regenerating everything

@@ -31,6 +31,18 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 12: *** END-OF-SESSION DELIVERABLE (training plateaued) ***. Latest run best
+  combined 3470.2 vs champion 3469.5 = within noise -> NOT promoted; the policy is
+  confirmed at its architecture ceiling (~3470) across runs. Delivered: (a) rendered a
+  PUSH-RECOVERY demo (scripts/render_rl_robust.py -> renders/rl_robust.mp4): the
+  champion survives 5/5 shoves at 130-150 N (well above the 30-100 N training range),
+  0 falls — visual proof of the robustness work. (b) Refreshed README (new rl_patrol +
+  rl_robust clips, robustness-aware-eval description, RL-driven patrol section, updated
+  scripts/tests layout, code-review note). (c) Wrote SESSION_UPDATE.md summarizing the
+  session (13 bugs fixed+verified, robustness-aware training + more-robust champion,
+  RL inspection patrol, 9/9 tests, known heading-drift limitation). Relaunched one
+  continuation from the champion. NEXT: keep one run going (promote on a REAL
+  combined gain >~3475); heading-aware policy is the only remaining big lever.
 - cycle 11: combined-eval continuation FINISHED (37.5M->49.5M) best 3462.8 < champion
   3469.5 -> not promoted; the robustness-aware metric is now also plateauing (~3460-3470),
   so the policy is near its ceiling for the current 40-d/no-heading architecture. Started
