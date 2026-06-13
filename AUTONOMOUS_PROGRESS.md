@@ -31,6 +31,22 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 8: built the RL-POLICY-DRIVEN INSPECTION PATROL (scripts/rl_patrol.py): the
+  trained locomotion policy balances+drives while a waypoint navigator (picks
+  forward/reverse to avoid an impossible 180deg spin; closes the heading loop
+  externally) walks the cold-aisle route and the onboard sensors scan anomalies. Self-
+  test passes: upright 120s, traverses mid-aisle, detects 4/5 anomalies. FINDING (root
+  cause of the earlier "rotation is really bad"): the policy tracks commanded yaw RATE,
+  not absolute heading (it has NO heading observation), so it settles to a ~-53deg
+  drift and can't hold a straight line — area-inspection coverage works, survey-grade
+  centerline tracking does not. The PROPER fix is a heading-aware policy (add a
+  heading-error obs + retrain) — a deliberate obs-space change (40->~42, new ONNX
+  interface, re-baseline), queued as the next MAJOR improvement (don't rush). The
+  cycle-7 forward run also FINISHED (30M->42M), max clean eval 1751 < champion 1756.7
+  -> still not promoted; clean-eval-gated refine has plateaued (2 runs). Relaunched one
+  more continuation (from 34M, DR on) per the keep-training directive; promote only if
+  >1756.7. NEXT: heading-aware policy redesign OR robustness-aware eval; then END
+  deliverable (~10h): refresh gallery/demos (incl. a patrol clip) + README + summary.
 - cycle 7: the cycle-6 DR-continuation refine run FINISHED (25M->37M). Best clean
   eval 1745-1756.7 — did NOT beat champion (1756.7/1757), so per the gate I did NOT
   promote; champion stays the shipped/protected best. BUT this run was the first with
