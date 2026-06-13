@@ -26,7 +26,33 @@ sys.path.insert(0, ROOT)
 OUT_DIR = os.path.join(ROOT, "bravebot_sim", "rl")
 ZIP = os.path.join(OUT_DIR, "policy")
 ONNX = os.path.join(OUT_DIR, "policy.onnx")
+BEST = os.path.join(OUT_DIR, "policy_best")
+BEST_ONNX = os.path.join(OUT_DIR, "policy_best.onnx")
 CSV = os.path.join(OUT_DIR, "progress.csv")
+EVAL_CMDS = [[0.5, 0.0, 0.0], [-0.4, 0.0, 0.0], [0.0, 0.0, 0.5],
+             [0.0, 0.0, -0.5], [0.4, 0.0, 0.3], [0.0, 0.0, 0.0]]
+
+
+def eval_score(model, env, steps=300):
+    """Deterministic eval over fixed commands -> scalar (upright + tracking).
+
+    Higher is better. Used to keep the BEST checkpoint by evaluation, not the last
+    (PPO plateaus and drifts — the final policy is often not the strongest)."""
+    import numpy as np
+    total = 0.0
+    for cmd in EVAL_CMDS:
+        obs, _ = env.reset(seed=12345)
+        env._cmd[:] = cmd
+        up, terr = 0, 0.0
+        for _ in range(steps):
+            a = model.predict(obs, deterministic=True)[0]
+            obs, _, term, _, _ = env.step(a)
+            if term:
+                break
+            up += 1
+            terr += abs(float(env._sensor("base_vel")[0]) - cmd[0])
+        total += up - 0.6 * terr        # reward staying upright, penalize tracking error
+    return total
 
 
 def main():
@@ -63,14 +89,18 @@ def main():
                     gamma=0.99, learning_rate=3e-4, ent_coef=0.005, clip_range=0.2,
                     policy_kwargs=dict(net_arch=[512, 256, 128]), device="cpu")
 
+    from bravebot_sim.rl.env import BraveBotLocomotionEnv
+    eval_env = BraveBotLocomotionEnv(randomize=False)   # deterministic eval for keep-best
+
     class Saver(BaseCallback):
         def __init__(self, every):
             super().__init__()
             self.every = every
             self.next = every
+            self.best = -1e18
             if not args.resume or not os.path.exists(CSV):
                 with open(CSV, "w", newline="") as f:
-                    csv.writer(f).writerow(["timesteps", "ep_rew_mean", "ep_len_mean"])
+                    csv.writer(f).writerow(["timesteps", "ep_rew_mean", "ep_len_mean", "eval", "best"])
 
         def _on_step(self):
             if self.num_timesteps >= self.next:
@@ -83,17 +113,40 @@ def main():
                     export_onnx(model, ONNX)
                 except Exception as e:
                     print("onnx export skipped:", e)
+                # keep-best by evaluation (not by last checkpoint)
+                score = eval_score(model, eval_env)
+                if score > self.best:
+                    self.best = score
+                    model.save(BEST)
+                    try:
+                        export_onnx(model, BEST_ONNX)
+                    except Exception:
+                        pass
+                star = " *BEST*" if score >= self.best else ""
                 with open(CSV, "a", newline="") as f:
-                    csv.writer(f).writerow([self.num_timesteps, round(rew, 2), round(ln, 1)])
-                print(f"[{self.num_timesteps:>10,}]  ep_rew_mean={rew:7.2f}  ep_len={ln:6.1f}  (saved)")
+                    csv.writer(f).writerow([self.num_timesteps, round(rew, 2), round(ln, 1),
+                                            round(score, 1), round(self.best, 1)])
+                print(f"[{self.num_timesteps:>10,}]  ep_rew={rew:7.1f}  ep_len={ln:6.1f}  "
+                      f"eval={score:7.1f}  best={self.best:7.1f}{star}")
             return True
 
     print(f"training {args.steps:,} steps, {args.envs} envs, device={model.device}")
     model.learn(total_timesteps=args.steps, callback=Saver(args.save_every),
                 reset_num_timesteps=not args.resume, progress_bar=False)
-    model.save(ZIP)
-    export_onnx(model, ONNX)
-    print("done. saved", ZIP + ".zip", "and", ONNX)
+    # ship the BEST-by-eval policy (final is often not the strongest)
+    final_score = eval_score(model, eval_env)
+    if os.path.exists(BEST + ".zip"):
+        from stable_baselines3 import PPO as _PPO
+        best_model = _PPO.load(BEST, device="cpu")
+        best_score = eval_score(best_model, eval_env)
+        winner, label = (model, "final") if final_score >= best_score else (best_model, "best-checkpoint")
+        print(f"shipping {label}: final={final_score:.1f} vs best={best_score:.1f}")
+        winner.save(ZIP)
+        export_onnx(winner, ONNX)
+    else:
+        model.save(ZIP)
+        export_onnx(model, ONNX)
+    print("done. shipped", ZIP + ".zip", "and", ONNX)
 
 
 def export_onnx(model, path):
