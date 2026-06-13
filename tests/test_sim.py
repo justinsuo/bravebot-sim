@@ -113,6 +113,38 @@ def test_gait_walks():
         assert not bot.state().fell, "gait fell"
 
 
+def test_curriculum_resume_offset():
+    # Regression for the high-sev resume bug: a fresh env warms up (DR off), but an
+    # env built with a large global_offset (what --resume bakes in) has DR fully on.
+    from bravebot_sim.rl.env import BraveBotLocomotionEnv
+    fresh = BraveBotLocomotionEnv(randomize=True)
+    assert fresh._global == 0 and fresh._dr_ramp() == 0.0, "fresh run must warm up"
+    resumed = BraveBotLocomotionEnv(randomize=True, global_offset=25_000_000 // 16)
+    assert resumed._dr_ramp() == 1.0, "resumed run must continue DR (not restart at 0)"
+    assert resumed._cmd_ramp() == 1.0
+
+
+def test_turn_lock_directional():
+    # Regression for the turn-governor bug: it must (a) stay upright under a sustained
+    # same-direction max arc, and (b) NOT freeze — an opposite-direction turn after a
+    # same-direction lock must still change the heading.
+    from bravebot_sim import PhysicsBraveBot, physics_model_path
+    bot = PhysicsBraveBot(physics_model_path())
+    for _ in range(int(20 / 0.002)):                 # 20 s constant max arc
+        bot.drive(0.6, 0.45)
+        bot.step(0.002)
+        assert not bot.state().fell, "fell on a sustained arc (turn governor unsafe)"
+    bot = PhysicsBraveBot(physics_model_path())      # fresh: right, then left
+    def seg(v, w, T):
+        for _ in range(int(T / 0.002)):
+            bot.drive(v, w); bot.step(0.002)
+    seg(0.5, 0.45, 12); h_right = bot.yaw
+    seg(0.5, 0.0, 6)
+    seg(0.5, -0.45, 14)
+    assert bot.yaw < h_right - 0.3, "opposite turn frozen (lock not directional)"
+    assert not bot.state().fell
+
+
 def _run_all():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     fails = 0

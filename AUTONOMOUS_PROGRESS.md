@@ -31,6 +31,21 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 7: the cycle-6 DR-continuation refine run FINISHED (25M->37M). Best clean
+  eval 1745-1756.7 — did NOT beat champion (1756.7/1757), so per the gate I did NOT
+  promote; champion stays the shipped/protected best. BUT this run was the first with
+  TRUE DR continuation, so I ran a robustness shootout (new scripts/robustness_shootout.py,
+  60 eps under full DR+pushes, paired seeds): champion vs drhardened BOTH 0% falls /
+  800-step survival, drhardened tracks 33% better under disturbance (track_err 0.120 vs
+  0.178) but is ~0.7% lower on CLEAN eval (1745.2 vs 1756.7). Net: a robustness/clean
+  trade-off, not a clear win -> KEEP champion (conservative + correct). Key insight: the
+  keep-best eval runs on a no-DR env so it CANNOT reward robustness — a future improvement
+  is a robustness-aware eval. Continued training FORWARD from the 30M frontier (DR fully
+  on) rather than resetting — promote a checkpoint only if it beats 1756.7. Added 2
+  regression tests codifying the cycle-6 HIGH fixes (curriculum-resume offset ->
+  dr_ramp; directional turn-lock stays upright + opposite turn executes); suite now 9/9.
+  Saved policy_drhardened.{zip,onnx} snapshot. NEXT: build the RL-driven inspection
+  patrol (user-requested) OR a robustness-aware eval; then END deliverable (~10h).
 - cycle 6: *** FIXED ALL 13 CODE-REVIEW BUGS (adversarially verified) ***. The
   review workflow (w1mmjo6ot) confirmed 13 real bugs; I fixed every one, then ran an
   adversarial verification workflow (w96q5hy7z) that re-ran each repro on the patched
