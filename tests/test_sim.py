@@ -145,6 +145,33 @@ def test_turn_lock_directional():
     assert not bot.state().fell
 
 
+def test_heading_env():
+    # The heading-aware env (the fix for the yaw drift) adds 2 obs (sin/cos of the
+    # heading error vs the integrated yaw-rate command) and a heading-hold reward.
+    from bravebot_sim.rl.heading_env import HeadingAwareEnv
+    e = HeadingAwareEnv(randomize=False)
+    o, _ = e.reset(seed=0)
+    assert o.shape == e.observation_space.shape == (42,)
+    assert e.action_space.shape == (9,)
+    # straight command: desired heading stays put, heading error stays small
+    e._cmd[:] = [0.4, 0, 0]
+    for _ in range(20):
+        o, r, term, trunc, _ = e.step(np.zeros(9, np.float32))
+        assert np.isfinite(o).all() and math.isfinite(r)
+        if term or trunc:
+            break
+    assert abs(e._yaw_des) < 1e-6, "straight command must not move the desired heading"
+    # turn command: desired heading integrates the commanded yaw rate
+    e._cmd[:] = [0, 0, 0.5]
+    for _ in range(25):
+        e.step(np.zeros(9, np.float32))
+    assert e._yaw_des > 0.1, "turn command must advance the desired heading"
+    # determinism: two fresh envs, same seed -> same initial obs
+    a, _ = HeadingAwareEnv(randomize=False).reset(seed=0)
+    b, _ = HeadingAwareEnv(randomize=False).reset(seed=0)
+    assert np.allclose(a, b), "heading env reset(seed) not deterministic"
+
+
 def _run_all():
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     fails = 0

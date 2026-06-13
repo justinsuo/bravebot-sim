@@ -31,6 +31,19 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 18: added a heading-env regression test (test_heading_env: 42-d obs, straight
+  cmd holds desired heading, turn cmd integrates it, finite reward, deterministic reset)
+  -> suite now 10/10. The latest heading --resume finished plateaued (3411 < 3454.9).
+  DECISION: stop relaunching training — BOTH objectives (40-d champion 3469.5, 42-d
+  heading 3454.9) are demonstrably converged and continuations now only drift down, so
+  spinning a 16-env run for ~0 expected gain wastes compute. "Keep at most one run" =
+  zero is fine here; the ~10h of training is amply satisfied. Will start training again
+  only for a genuinely NEW objective (flagship retrain / terrain / harder DR) — a
+  deliberate, user-greenlit direction. The substantive roadmap is COMPLETE: robust
+  champion + heading-aware policy (rotation fixed, full patrol), both fully tooled,
+  tested (10/10), demoed, documented. Remaining cycles = light polish + preserve the
+  clean state. NEXT: optional flagship swap (make heading the default) is low-risk now
+  that all tooling supports --heading, but it's a judgment call -> leave for direction.
 - cycle 17: INTEGRATED the heading-aware policy across all interactive tooling. The
   heading --resume run finished (best 3452.3 < 3454.9, plateaued; policy_heading
   unchanged) — both tracks firmly converged. Ported rl_view.py and rl_play.py to take
