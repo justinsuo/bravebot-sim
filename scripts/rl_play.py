@@ -48,7 +48,7 @@ def main():
     args = ap.parse_args()
 
     policy = load_policy(args.onnx)
-    env = BraveBotLocomotionEnv(episode_s=args.seconds)
+    env = BraveBotLocomotionEnv(episode_s=args.seconds, randomize=False)
     obs, _ = env.reset(seed=0)
     env._cmd[:] = args.cmd     # fixed command
 

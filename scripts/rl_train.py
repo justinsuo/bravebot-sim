@@ -59,9 +59,9 @@ def main():
         model = PPO.load(ZIP, env=venv, device="cpu")
     else:
         model = PPO("MlpPolicy", venv, verbose=0, seed=args.seed,
-                    n_steps=1024, batch_size=4096, n_epochs=5, gae_lambda=0.95,
-                    gamma=0.99, learning_rate=3e-4, ent_coef=0.0, clip_range=0.2,
-                    policy_kwargs=dict(net_arch=[256, 256]), device="cpu")
+                    n_steps=1024, batch_size=8192, n_epochs=5, gae_lambda=0.95,
+                    gamma=0.99, learning_rate=3e-4, ent_coef=0.005, clip_range=0.2,
+                    policy_kwargs=dict(net_arch=[512, 256, 128]), device="cpu")
 
     class Saver(BaseCallback):
         def __init__(self, every):
