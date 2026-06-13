@@ -107,6 +107,6 @@ DR_DEFAULT = dict(
     friction_pct=0.40,      # ±40% friction
     damping_pct=0.50,
     gain_pct=0.20,          # ±20% actuator strength
-    gravity_tilt_rad=0.08,  # ±4.6° floor tilt — ramps / raised-floor slopes (was ±2.9°)
+    gravity_tilt_rad=0.05,  # ±2.9° floor tilt
 )
-PUSH_DEFAULT = dict(force_n=(30.0, 120.0), duration_s=0.1, interval_s=(2.0, 5.0))
+PUSH_DEFAULT = dict(force_n=(30.0, 100.0), duration_s=0.1, interval_s=(2.0, 5.0))

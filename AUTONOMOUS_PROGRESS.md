@@ -31,6 +31,17 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 21: steeper-slope experiment CONCLUDED -> REVERTED (kept the bar honest). The
+  ±4.6°/120N heading run finished; fair head-to-head under the STEEPER regime: v1
+  (±2.9°-trained) clean 1721 / steepDR 1680 / combined 3401 BEAT the harder-DR policy
+  (1666 / 1652 / 3318) on every axis, AND both survive ±4.6° AND ±6° static slopes at
+  100%. FINDING: the heading policy ALREADY generalizes to ±6° slopes despite ±2.9°
+  training — harder-slope DR was unnecessary and the harder regime (+ a late instability)
+  only made it worse. So reverted: restored policy_heading <- v1, reverted DR_DEFAULT to
+  ±2.9°/100N, removed the redundant v1 snapshot. Tests 10/10; policy_heading verified
+  (holds heading ~5°). Net: a clean negative result, no regression — the shipped policies
+  are confirmed already slope-robust to ~±6°. STATUS: project complete + both policies at
+  their best; remaining work is genuinely optional/on-direction.
 - cycle 20: pushing sim-to-real robustness via a NEW objective — STEEPER-SLOPE domain
   randomization (aligned with "as realistic as possible"). The shipped policies only saw
   ±2.9° floor tilt; real facilities have ramps/raised floors. Bumped DR_DEFAULT
