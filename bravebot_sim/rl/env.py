@@ -65,9 +65,12 @@ class BraveBotLocomotionEnv(gym.Env):
     metadata = {"render_modes": []}
 
     def __init__(self, control_hz: int = 50, episode_s: float = 16.0,
-                 randomize: bool = True, global_offset: int = 0):
+                 randomize: bool = True, global_offset: int = 0, model_path: str = None):
         super().__init__()
-        self.model = mujoco.MjModel.from_xml_path(MODEL)
+        # default is the robot-only physics model; pass the facility physics scene to
+        # run the same policy inside the data-center aisle (identical robot dynamics +
+        # facility geometry/collision) — used for richer patrol renders.
+        self.model = mujoco.MjModel.from_xml_path(model_path or MODEL)
         self.data = mujoco.MjData(self.model)
         self.sim_dt = float(self.model.opt.timestep)
         self.control_hz = control_hz

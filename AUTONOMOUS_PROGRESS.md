@@ -31,6 +31,15 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 19: richer FACILITY-SCENE patrol demo (additive, low-risk). Added an optional
+  model_path to the RL env (default unchanged -> champion/tests intact, verified 10/10)
+  so the same policy can run inside the data-center physics scene (racks/walls). Added
+  rl_patrol.py --scene; rendered renders/rl_patrol_facility.mp4 — the heading-aware
+  policy walks the FULL inspection round THROUGH THE AISLE, 5/5 anomalies, upright.
+  Featured it as the top demo in README. No training (both tracks converged; not
+  churning). This is the capstone visual: a legged policy doing a real autonomous
+  inspection round in the facility. NEXT: light polish only; flagship swap / new
+  training objective remain optional + on-direction.
 - cycle 18: added a heading-env regression test (test_heading_env: 42-d obs, straight
   cmd holds desired heading, turn cmd integrates it, finite reward, deterministic reset)
   -> suite now 10/10. The latest heading --resume finished plateaued (3411 < 3454.9).

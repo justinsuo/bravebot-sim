@@ -39,6 +39,7 @@ from bravebot_sim.sim import scan_anomalies  # noqa: E402
 
 RL_DIR = os.path.join(ROOT, "bravebot_sim", "rl")
 ENV_CLS = BraveBotLocomotionEnv   # overridden to HeadingAwareEnv by --heading
+MODEL_PATH = None                 # set to the facility physics scene by --scene
 WP_RADIUS = 0.7            # m — "passed near" tolerance (the policy tracks yaw rate,
                            # not absolute heading, so it threads the aisle with some
                            # lateral drift; area-inspection coverage is the real goal)
@@ -133,7 +134,7 @@ def _scan_frame_fn(env):
 
 def run_patrol(policy, route, on_step=None, max_s=120.0):
     """Drive the route with the policy + navigator; return a patrol report."""
-    env = ENV_CLS(episode_s=1e9, randomize=False)
+    env = ENV_CLS(episode_s=1e9, randomize=False, model_path=MODEL_PATH)
     obs, _ = env.reset(seed=0)
     nav = WaypointNavigator(route)
     frame = _scan_frame_fn(env)
@@ -167,9 +168,14 @@ def main():
     ap.add_argument("--view", action="store_true", help="live MuJoCo viewer (mjpython)")
     ap.add_argument("--render", metavar="OUT.mp4", help="offscreen-render a patrol clip")
     ap.add_argument("--secs", type=float, default=42.0, help="patrol duration for --render")
+    ap.add_argument("--scene", action="store_true",
+                    help="run inside the data-center facility scene (racks/walls) for richer renders")
     ap.add_argument("--check", action="store_true", help="headless self-test")
     args = ap.parse_args()
-    global ENV_CLS
+    global ENV_CLS, MODEL_PATH
+    if args.scene:
+        from bravebot_sim import physics_scene_path
+        MODEL_PATH = physics_scene_path()
     if args.heading:
         from bravebot_sim.rl.heading_env import HeadingAwareEnv
         ENV_CLS = HeadingAwareEnv
@@ -186,7 +192,7 @@ def main():
 
     if args.render:
         import imageio.v3 as iio
-        env = ENV_CLS(episode_s=1e9, randomize=False)
+        env = ENV_CLS(episode_s=1e9, randomize=False, model_path=MODEL_PATH)
         obs, _ = env.reset(seed=0)
         nav = WaypointNavigator(route)
         frame_fn = _scan_frame_fn(env)
@@ -222,7 +228,7 @@ def main():
     if args.view:
         import time
         from mujoco import viewer as mj_viewer   # avoid rebinding module-level `mujoco`
-        env = ENV_CLS(episode_s=1e9, randomize=False)
+        env = ENV_CLS(episode_s=1e9, randomize=False, model_path=MODEL_PATH)
         obs, _ = env.reset(seed=0)
         nav = WaypointNavigator(route)
         print("RL inspection patrol — watch the legged robot walk the aisle.")

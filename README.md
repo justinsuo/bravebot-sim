@@ -20,7 +20,7 @@ and recovers from shoves — plus the four-sensor inspection patrol it was built
 | **Autonomous inspection patrol** (kinematic) | **Balance-assisted legged gait** |
 | ![patrol](docs/media/patrol.gif) | ![gait](docs/media/gait.gif) |
 
-<sub>Full-resolution clips: [**rl_robust.mp4**](renders/rl_robust.mp4) (RL push recovery — survives 5/5 shoves @130–150 N) · [**rl_patrol_heading.mp4**](renders/rl_patrol_heading.mp4) (heading-aware policy walks the *full* inspection round, 5/5 anomalies) · [rl_walk_v2.mp4](renders/rl_walk_v2.mp4) · [physics.mp4](renders/physics.mp4) · [patrol.mp4](renders/patrol.mp4) (kinematic) · [gait.mp4](renders/gait.mp4)</sub>
+<sub>Full-resolution clips: [**rl_patrol_facility.mp4**](renders/rl_patrol_facility.mp4) (heading-aware policy walks the full inspection round *through the data-center aisle*, 5/5 anomalies) · [**rl_robust.mp4**](renders/rl_robust.mp4) (RL push recovery — survives 5/5 shoves @130–150 N) · [rl_patrol_heading.mp4](renders/rl_patrol_heading.mp4) (same, open space) · [rl_walk_v2.mp4](renders/rl_walk_v2.mp4) · [physics.mp4](renders/physics.mp4) · [patrol.mp4](renders/patrol.mp4) (kinematic) · [gait.mp4](renders/gait.mp4)</sub>
 
 | ![studio](renders/hero_studio.png) | ![in the aisle](renders/hero_patrol.png) | ![collision](renders/physics_collision.png) |
 |---|---|---|
@@ -236,7 +236,8 @@ pip install -r requirements-rl.txt
 mjpython scripts/rl_view.py                # drive the trained policy live (arrows = vx / yaw)
 mjpython scripts/rl_view.py --heading      # ... the heading-aware policy (holds heading)
 python  scripts/rl_play.py --cmd 0 0 0.6   # e.g. turn in place  (--heading for the 42-d policy)
-python  scripts/rl_patrol.py --heading     # FULL legged inspection round (9/9, 5/5 anomalies)
+python  scripts/rl_patrol.py --heading           # FULL legged inspection round (9/9, 5/5 anomalies)
+python  scripts/rl_patrol.py --heading --scene --render renders/rl_patrol_facility.mp4  # in the aisle
 python  scripts/rl_patrol.py --champion    # near-aisle sweep with the 40-d champion
 python  scripts/robustness_shootout.py     # compare policies under DR + pushes
 python  scripts/rl_train.py --steps 25_000_000 --envs 16    # (re)train the 40-d champion
