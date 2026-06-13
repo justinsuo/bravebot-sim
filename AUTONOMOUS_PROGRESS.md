@@ -31,6 +31,18 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 16: heading-aware run CONVERGED + finalized. It peaked at combined 3454.9 (~21M)
+  then late-drifted (30M -> 2995, the usual late-PPO instability), so keep-best correctly
+  retained the 21M policy -> policy_heading.zip = that best (matches the cycle-15 demo
+  snapshot). Re-verified the FINAL shipped policy_heading (training now idle, no race):
+  straight->5.5deg heading, full patrol 9/9 + 5/5 anomalies completed upright, survives
+  5/5 shoves @130-150N. Committed policy_heading.onnx as a tracked, reproducible artifact
+  (the heading policy is now deployable + the demo's exact policy). Relaunched a heading
+  --resume continuation (keep one run going; keep-best protects 3454.9, though both
+  objectives are plateaued). STATUS: two excellent policies — 40-d champion (robust,
+  shipped default, all tooling) and 42-d heading policy (holds heading, full patrol,
+  robust). The "rotation is bad" problem is solved. NEXT: optional flagship promotion of
+  the heading policy needs rl_view/rl_play ported to 42-d obs — a clean follow-up.
 - cycle 15: *** HEADING-AWARE POLICY WORKS — ROTATION DRIFT FIXED + FULL PATROL
   TRAVERSAL ***. The from-scratch heading run (cycle 14) learned fast: ep_len 35@500k ->
   full 800 by ~16M, combined eval climbing past 3450 by 21M. Tested the 21M checkpoint:
