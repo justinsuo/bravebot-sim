@@ -31,6 +31,13 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 25: audited the URDF (the ROS 2/Gazebo/RViz deliverable, previously only
+  connectivity-tested). Result: CLEAN — 27 links/26 joints connected, every link has
+  positive inertia, all revolute joints have limits, all 54 mesh refs resolve, total
+  mass 36.76 kg (matches physics ~37). No fix needed; upgraded test_urdf_connected ->
+  test_urdf_valid to lock all of that in (inertials, limits, mesh resolution, mass
+  range). Suite 11/11. Continuing the audit-unchecked-surfaces discipline — this one
+  was already correct, now regression-protected.
 - cycle 24: FIXED a real DEPLOYMENT-ARTIFACT bug (found by verifying the .onnx path).
   The .onnx actors are what go on the real robot, but they were exported as the RAW
   policy mean — SB3's predict() clips to [-1,1] while the ONNX did not, so on

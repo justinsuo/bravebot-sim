@@ -46,15 +46,35 @@ def test_models_compile():
             assert np.isfinite(d.qpos).all()
 
 
-def test_urdf_connected():
+def test_urdf_valid():
+    # The URDF is a ROS 2 / Gazebo / RViz deliverable — verify it's actually usable:
+    # a connected tree, every link has positive inertia, revolute joints have limits,
+    # mesh refs resolve, and total mass matches the calibrated physics model (~37 kg).
     import xml.etree.ElementTree as ET
-    r = ET.parse(os.path.join(ROOT, "description", "urdf", "bravebot.urdf")).getroot()
-    links = {l.get("name") for l in r.findall("link")}
-    joints = r.findall("joint")
-    assert len(links) == len(joints) + 1, "tree must be links = joints + 1"
+    udir = os.path.join(ROOT, "description", "urdf")
+    r = ET.parse(os.path.join(udir, "bravebot.urdf")).getroot()
+    links, joints = r.findall("link"), r.findall("joint")
+    names = {l.get("name") for l in links}
+    assert len(names) == len(joints) + 1, "tree must be links = joints + 1"
     for j in joints:                                          # no dangling refs
-        assert j.find("parent").get("link") in links
-        assert j.find("child").get("link") in links
+        assert j.find("parent").get("link") in names
+        assert j.find("child").get("link") in names
+        if j.get("type") in ("revolute", "prismatic"):
+            assert j.find("limit") is not None, f"{j.get('name')} missing <limit>"
+    total = 0.0
+    for l in links:
+        m = l.find("inertial/mass")
+        inr = l.find("inertial/inertia")
+        assert m is not None and inr is not None, f"{l.get('name')} missing inertial"
+        total += float(m.get("value"))
+        for ax in ("ixx", "iyy", "izz"):
+            assert float(inr.get(ax)) > 0, f"{l.get('name')} non-positive {ax}"
+    assert 30.0 < total < 45.0, f"URDF total mass {total:.1f} kg off (physics ~37)"
+    for mesh in r.iter("mesh"):
+        fn = mesh.get("filename", "").replace("package://", "").replace("file://", "")
+        assert any(os.path.exists(p) for p in
+                   (fn, os.path.join(udir, fn), os.path.join(ROOT, "description", fn))), \
+            f"unresolved mesh {mesh.get('filename')}"
 
 
 def test_kinematic_drive_and_scan():
