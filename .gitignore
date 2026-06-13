@@ -9,3 +9,6 @@ MUJOCO_LOG.TXT
 # the tracked deployment artifacts (policy.onnx, policy_champion.onnx, policy_v*.onnx).
 bravebot_sim/rl/*.zip
 bravebot_sim/rl/policy_best.onnx
+bravebot_sim/rl/policy_heading_best.onnx
+# training-curve logs are regenerable artifacts; the human log is AUTONOMOUS_PROGRESS.md
+bravebot_sim/rl/progress*.csv
