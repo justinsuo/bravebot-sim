@@ -41,7 +41,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 MODEL = os.path.normpath(os.path.join(_HERE, "..", "..", "description", "mjcf", "bravebot_physics.xml"))
 
 LEG_JOINTS = ["abad_L", "hip_L", "knee_L", "abad_R", "hip_R", "knee_R"]
-LEG_RANGE = np.array([0.16, 0.6, 0.6, 0.16, 0.6, 0.6])  # ab/ad capped -> use waist for roll
+LEG_RANGE = np.array([0.30, 0.6, 0.6, 0.30, 0.6, 0.6])  # moderate splay (natural, roll-stable)
 WHEEL_TORQUE = 40.0
 WAIST_RANGE = 0.9        # rad — torso roll action scale (active roll control)
 WHEEL_RADIUS = float(R.WHEEL_RADIUS)
@@ -213,11 +213,13 @@ class BraveBotLocomotionEnv(gym.Env):
         # --- small penalty regularizers (kept << positive shaping) ---
         p_arate = -0.008 * float(np.sum((action - self._prev_action) ** 2))   # smoothness
         p_energy = -0.0003 * float(np.sum(action ** 2))                        # effort
-        # posture: now that the actuated torso-roll joint provides real roll
-        # control, penalize ab/ad SPLAY so the policy balances roll with the WAIST
-        # (lean the upper body) and keeps the legs tucked — a natural stance.
+        # posture: ab/ad range is capped to a moderate splay (natural-looking,
+        # roll-stable) so only a light splay penalty; keep the TORSO ~upright so
+        # the waist is a gentle roll helper, not the wild exploit it became when
+        # left free (it saturated and the base velocity blew up).
         p_pose = (-0.05 * float(np.sum(leg_dev[PITCHKNEE_IDX] ** 2))
-                  - 0.15 * float(np.sum(leg_q[ABAD_IDX] ** 2)))
+                  - 0.03 * float(np.sum(leg_q[ABAD_IDX] ** 2)))
+        p_waist = -0.25 * float(self.data.qpos[self._waist_qadr]) ** 2
         over_hi = np.clip(leg_q - (LEG_UPPER - 0.1), 0, None)
         over_lo = np.clip((LEG_LOWER + 0.1) - leg_q, 0, None)
         p_limit = -1.0 * float(np.sum(over_hi ** 2 + over_lo ** 2))            # limit barrier
@@ -227,7 +229,7 @@ class BraveBotLocomotionEnv(gym.Env):
         p_gyro = -0.01 * float(gyro[0] ** 2 + gyro[1] ** 2)                   # roll/pitch damping
 
         reward = (r_vx + r_vy + r_yaw + r_orient + r_height + r_alive + r_lean
-                  + p_arate + p_energy + p_pose + p_limit + p_slip + p_bvel + p_gyro)
+                  + p_arate + p_energy + p_pose + p_waist + p_limit + p_slip + p_bvel + p_gyro)
 
         roll = math.asin(max(-1, min(1, -self.data.xmat[self._base][7])))
         pitch = math.asin(max(-1, min(1, self.data.xmat[self._base][6])))

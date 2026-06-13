@@ -187,7 +187,7 @@ def build_mjcf(physics: bool = False) -> str:
     if physics:
         torso = ET.SubElement(base, "body", name="torso_roll", pos=_v(WAIST_PIVOT))
         ET.SubElement(torso, "joint", name="torso_roll", type="hinge", axis="1 0 0",
-                      range=f"-{WAIST_RANGE} {WAIST_RANGE}", damping="3",
+                      range=f"-{WAIST_RANGE} {WAIST_RANGE}", damping="8",
                       armature="0.05", frictionloss="0.1")
         ET.SubElement(torso, "inertial", pos="0 0 0.05", mass="0.3",
                       diaginertia="0.002 0.002 0.002")   # connector; mass is the children

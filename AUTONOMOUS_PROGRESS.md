@@ -31,6 +31,16 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 2: capped-0.16+waist run went DEGENERATE (waist saturated +52°, base_vel
+  23.9 m/s exploit, ep_len stuck ~430, eval crashed to -8000). Key insight: the
+  waist only shifts CoM within a NARROW base; splay actually WIDENS the support —
+  so a too-narrow stance can't be roll-robust regardless of waist. Pivoted to a
+  MODERATE splay (cap 0.30 ≈17°, natural-looking but roll-stable) as the main
+  mechanism + waist as a GENTLE helper (penalize waist deviation -0.25*w^2 to keep
+  torso upright + prevent exploit) + waist damping 3->8. Relaunched 22M (pid 43244).
+  The new keep-best EVAL column is a great health signal — watch it stay positive.
+  NEXT: check posture (want abad ~15°, torso upright, knees bent) + ep_len->800 +
+  eval climbing. If good, showcase. If still struggling, try cap 0.35 or accept.
 - cycle 0: added waist-roll joint + retrain launched. Early posture natural (tucked).
 - cycle 1: waist-roll run learned to balance (ep_len->677 @5M) BUT reverted to
   SPLAYING (abad ±30) under DR — the splay penalty is too weak vs splay's roll
