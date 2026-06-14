@@ -31,6 +31,13 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 31: VERIFIED the deployment spec's trickiest convention (projected gravity, the
+  #1 sim-to-real bug source). Reconstructed it the way a real-robot deployer would — from
+  the IMU world-from-body quaternion, g_body = R^T·[0,0,-1] — and confirmed it matches the
+  policy's trained obs exactly (atol 1e-3) at a non-trivial tilted orientation. Sharpened
+  the deployment doc's proj-gravity row with the exact verified formula so there's no sign
+  ambiguity. The deployment guide is now not just written but VALIDATED for the user's
+  Tron 1. Doc-only.
 - cycle 30: added a SIM-TO-REAL DEPLOYMENT SPEC to rl/README (serves the user's actual
   goal: run the policy on the real Tron 1). The .onnx contract was only implicit in the
   env docstring; wrote an explicit "Deploying on the real robot" table — the exact 40-d

@@ -72,7 +72,7 @@ at **50 Hz** and rebuild the observation each step **in this exact order**:
 
 | # | field (size) | how to build it |
 |---|---|---|
-| 1 | projected gravity (3) | gravity-down unit vector in the IMU/base frame (from the IMU orientation) |
+| 1 | projected gravity (3) | gravity-down in the **body frame**: `R_wb·ᵀ[0,0,−1]` where `R_wb` is the IMU world-from-body rotation (verified to match the trained obs) |
 | 2 | base gyro (3) | body angular velocity rad/s (IMU) |
 | 3 | base lin vel (3) | body linear velocity m/s (IMU) |
 | 4 | leg qpos − stance (6) | the 6 leg-joint angles **minus** the stance `[0, 0.30, 0.60, 0, −0.30, −0.60]`, joint order `[abad_L, hip_L, knee_L, abad_R, hip_R, knee_R]` (mirrored LimX axes) |
