@@ -63,3 +63,32 @@ them the way the TRON 1 `isaacgym/policy.onnx` is loaded, or drop into
   champion's yaw-rate-only control is what motivated `heading_env.py`; a possible
   follow-up is making the heading policy the default everywhere (port the few
   remaining 40-d defaults to the 42-d observation).
+
+## Deploying on the real robot (Tron 1)
+
+`policy_*.onnx` maps a 40-d observation → a 9-d action in `[-1, 1]` (the export is
+**clamped**, so the output is already bounded — no extra clip needed). Run the loop
+at **50 Hz** and rebuild the observation each step **in this exact order**:
+
+| # | field (size) | how to build it |
+|---|---|---|
+| 1 | projected gravity (3) | gravity-down unit vector in the IMU/base frame (from the IMU orientation) |
+| 2 | base gyro (3) | body angular velocity rad/s (IMU) |
+| 3 | base lin vel (3) | body linear velocity m/s (IMU) |
+| 4 | leg qpos − stance (6) | the 6 leg-joint angles **minus** the stance `[0, 0.30, 0.60, 0, −0.30, −0.60]`, joint order `[abad_L, hip_L, knee_L, abad_R, hip_R, knee_R]` (mirrored LimX axes) |
+| 5 | leg qvel (6) | the 6 leg-joint velocities rad/s, same order |
+| 6 | wheel speeds (2) | wheel L, R angular velocity rad/s |
+| 7 | waist roll q, qd (2) | torso-roll joint angle (rad) + velocity |
+| 8 | gait clock (2) | `[sin φ, cos φ]`, advance `φ += 2π·1.4/50` each step (any start phase) |
+| 9 | prev action (9) | the 9-vector you commanded last step |
+| 10 | command (3) | target `(vx, vy, yaw_rate)` |
+| 11 | dr ramp (1) | `1.0` at deployment |
+
+Apply the 9-d action (`a`):
+- `a[0:6]` → leg **position-servo** targets: `target_j = stance_j + a_j · range_j`, `range = [0.30, 0.60, 0.60, 0.30, 0.60, 0.60]`
+- `a[6:8]` → wheel **motor torques**: `τ = a · 40 N·m` (L, R)
+- `a[8]` → torso-roll **position-servo** target: `a · 0.9 rad`
+
+For the **heading-aware** policy (`policy_heading.onnx`, 42-d) append 2 more obs:
+`[sin(ψ_err), cos(ψ_err)]` where `ψ_err = yaw − ψ_des` and `ψ_des += yaw_rate_cmd / 50`
+each step (the integral of the commanded yaw rate).

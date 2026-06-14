@@ -31,6 +31,15 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- cycle 30: added a SIM-TO-REAL DEPLOYMENT SPEC to rl/README (serves the user's actual
+  goal: run the policy on the real Tron 1). The .onnx contract was only implicit in the
+  env docstring; wrote an explicit "Deploying on the real robot" table — the exact 40-d
+  obs vector to build each step (field-by-field, units, joint order, stance reference,
+  the gait-clock advance 2pi*1.4/50, prev-action feedback, dr_ramp=1.0), the 50 Hz rate,
+  and the 9-d action mapping (leg position offsets = stance + a*range with range
+  [0.30,0.60,0.60,0.30,0.60,0.60]; wheel torques = a*40 N.m; waist = a*0.9 rad). Plus the
+  42-d heading variant (append sin/cos of yaw vs the integrated yaw-rate command).
+  Verified every number against the code. Doc-only; bridges sim -> the user's hardware.
 - cycle 29: tried to DELIVER the user's "walk side to side" via the scripted gait's
   latent lateral side-step (abad_amp, which was never enabled). Result: NOT safely
   possible. Tested abad_amp over the real gait schedule (march/forward 0.4/back/turn):
