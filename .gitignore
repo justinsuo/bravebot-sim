@@ -12,3 +12,4 @@ bravebot_sim/rl/policy_best.onnx
 bravebot_sim/rl/policy_heading_best.onnx
 # training-curve logs are regenerable artifacts; the human log is AUTONOMOUS_PROGRESS.md
 bravebot_sim/rl/progress*.csv
+description/mjcf/_playground.xml

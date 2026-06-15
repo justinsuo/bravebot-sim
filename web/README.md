@@ -22,25 +22,45 @@ Three.js loads from a CDN, so the page needs internet the first time.)
 - **Explode slider / button** — slides the robot from fully assembled to a clean
   exploded view (each part moves radially out from the robot's center).
 - **Click any part** (in the 3D view or the grouped Parts panel) to select it —
-  the rest dim out and an info card shows the part's name, group, description, and
-  (for sensors) modality / range / field-of-view.
+  the rest dim out and an info card shows the part's name, group, **mass (kg)**,
+  description, and (for sensors) modality / range / field-of-view.
 - **Color by group** — recolor parts by subsystem (Chassis, Legs, Wheels,
   Structure, Compute, Sensors, Power, Comms, Safety) for a teaching view.
+- **Labels** — explode the robot and float a leader-line callout on every part,
+  turning the exploded view into a labelled BOM diagram.
+- **Highlight sensors** — glow every sensing component green (LiDAR, depth/thermal
+  cameras, ultrasonic, etc.) and dim the rest, to see the whole perception suite.
 - **Auto-rotate** for a turntable presentation.
+
+Per-part masses come from the calibrated physics model's body inertials (total
+**36.76 kg**).
 
 ## Live physics simulator (`sim.html`)
 
 ```bash
 ./scripts/run_sim.sh            # serves on :8001 and opens the live sim
 ```
-This runs the **actual MuJoCo rigid-body physics + the balance controller** in a
-background thread (500 Hz, real-time) and streams the live part poses to the
-browser, which renders them and sends back drive commands. The robot **balances on
-its wheels** (it's a high-CoM single-axle inverted pendulum) and you **drive it
-around** with <kbd>↑↓</kbd>/<kbd>WS</kbd> (forward/back) and <kbd>←→</kbd>/<kbd>AD</kbd>
-(turn); <kbd>space</kbd> stops, <kbd>R</kbd> resets, drag to orbit (chase-cam
-follows). HUD shows balance status, speed, body pitch, and position. It auto-recovers
-if it ever tips. `scripts/sim_server.py` is the server (stdlib only, no extra deps).
+This runs the **actual MuJoCo rigid-body physics** in a background thread (500 Hz,
+real-time) and streams the live part poses to the browser, which renders them and
+sends back commands. The robot **balances on its wheels** (it's a high-CoM
+single-axle inverted pendulum) and you **drive it around** with <kbd>↑↓</kbd>/<kbd>WS</kbd>
+(forward/back) and <kbd>←→</kbd>/<kbd>AD</kbd> (turn); <kbd>space</kbd> stops,
+<kbd>R</kbd> resets. HUD shows controller, balance status, speed, body pitch, and
+position. It auto-recovers if it ever tips. `scripts/sim_server.py` is the server
+(stdlib only — no websockets/extra deps).
+
+You can also:
+
+- **Drive the playground** — a shallow ramp, two bumps, and three pillars are
+  spawned as real collision geometry; drive over/around them.
+- **Click the robot to shove it** — a 150 N impulse is applied to the torso in the
+  click direction, so you can test how hard you can push it before it tips and watch
+  it recover.
+- **Switch the controller live** (<kbd>M</kbd> or the *controller* button) between
+  the hand-tuned **balance** controller and the trained **RL policy**
+  (`policy_champion`) — the swap continues from the exact current physical state.
+- **First-person camera** (<kbd>F</kbd> or the *first-person* button) — ride along
+  from the robot's head, looking down its heading; toggle back to the orbit chase-cam.
 
 ## How it's built (explorer)
 

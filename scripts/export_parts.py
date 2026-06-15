@@ -48,6 +48,13 @@ def main():
 
     comp_by_id = {c.id: c for c in R.COMPONENTS}
     sensor_comp = {c.id: c.sensor for c in R.SENSOR_COMPONENTS}
+    # per-part mass (kg) from the calibrated PHYSICS model body inertials
+    pm = mujoco.MjModel.from_xml_path(os.path.join(ROOT, "description", "mjcf", "bravebot_physics.xml"))
+    mass_by_key = {}
+    for b in range(pm.nbody):
+        bn = mujoco.mj_id2name(pm, mujoco.mjtObj.mjOBJ_BODY, b)
+        if bn and bn.endswith("_link"):
+            mass_by_key[bn[:-5]] = float(pm.body_mass[b])
     parts, centroid = [], np.zeros(3)
 
     for g in range(m.ngeom):
@@ -90,6 +97,7 @@ def main():
             file=stl, pos=[round(float(x), 5) for x in pos],
             quat=[round(float(x), 6) for x in quat],
             color=[round(float(x), 3) for x in rgba[:3]],
+            mass=round(mass_by_key.get(key, 0.0), 3),
             desc=desc, sensor=sensor))
         centroid += pos
     centroid /= max(1, len(parts))

@@ -31,6 +31,22 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- FEATURE PACK (user: "do all of them"): shipped all 6 offered interface upgrades.
+  EXPLORER (web/index.html): (1) per-part MASS in the info card — export_parts.py now reads
+  body inertials from bravebot_physics.xml into parts.json (total 36.76 kg); (2) LABELS —
+  exploded leader-line callouts on every part via CSS2DRenderer (labelled-BOM diagram);
+  (3) HIGHLIGHT SENSORS button — glow all sensing components green, dim the rest.
+  SIM (web/sim.html + scripts/sim_server.py): (4) PLAYGROUND — ramp + 2 bumps + 3 pillars as
+  real collision geoms (injected into a generated _playground.xml so relative meshdir resolves;
+  gitignored); (5) CLICK-TO-SHOVE — raycast the robot, apply a 150 N torso impulse in the click
+  direction (POST /push), tap-vs-orbit-drag disambiguated by pixel movement; (6) CONTROLLER
+  TOGGLE — switch live between the hand-tuned balance controller and the trained RL policy
+  (policy_champion) via POST /mode, continuing from the exact physical state; plus FIRST-PERSON
+  camera toggle. Backend made THREAD-SAFE: mode-switch + reset were mutating MjData off the
+  physics thread (cross-thread MuJoCo race -> segfault); now the loop thread is the sole MjData
+  mutator and handlers only set pending flags. Verified server-side: balances (pitch ~-0.04),
+  push-recovers (pitch spiked -0.28 -> back to -0.04 upright), drives over the bump (x->1.26),
+  RL-mode switch + RL drive both upright, no crash. Both JS modules pass node --check.
 - NEW FEATURE (user request): LIVE PHYSICS SIMULATOR in the browser. scripts/sim_server.py
   runs the real MuJoCo rigid-body physics + balance controller in a background thread (500Hz,
   real-time) and streams live per-part poses (with the mesh-recenter correction) over a stdlib

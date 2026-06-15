@@ -54,6 +54,9 @@
   .spin{ width:34px; height:34px; border:3px solid #1c2533; border-top-color:var(--accent);
     border-radius:50%; animation:s 1s linear infinite; } @keyframes s{ to{ transform:rotate(360deg);} }
   .sep{ width:1px; height:24px; background:var(--line); }
+  .plabel{ background:rgba(13,20,32,.86); border:1px solid var(--line); color:#dbe3ee;
+    padding:2px 8px; border-radius:7px; font-size:11px; white-space:nowrap; pointer-events:none;
+    transform:translate(8px,-50%); box-shadow:0 3px 10px rgba(0,0,0,.4); }
 </style>
 </head>
 <body>
@@ -89,6 +92,8 @@
   <button class="btn" id="b_explode">Explode</button>
   <button class="btn" id="b_rotate">Auto-rotate</button>
   <button class="btn" id="b_group">Color by group</button>
+  <button class="btn" id="b_labels">Labels</button>
+  <button class="btn" id="b_sensors">Highlight sensors</button>
   <button class="btn" id="b_reset">Reset view</button>
 </div>
 <div id="hint">drag = orbit · scroll = zoom · click a part to inspect</div>
@@ -103,6 +108,7 @@
 import * as THREE from 'three';
 import { STLLoader } from 'three/addons/loaders/STLLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
 const GROUP_COLORS = {                       // educational "color by group" palette
   Chassis:'#9aa6b6', Legs:'#f4a14e', Wheels:'#3a3f4b', Structure:'#7e8aa0',
@@ -121,6 +127,11 @@ renderer.setSize(innerWidth, innerHeight);
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
 app.appendChild(renderer.domElement);
+
+const labelRenderer = new CSS2DRenderer();              // HTML labels overlay (leader-line tips)
+labelRenderer.setSize(innerWidth, innerHeight);
+labelRenderer.domElement.style.cssText = 'position:absolute;top:0;left:0;pointer-events:none';
+app.appendChild(labelRenderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; controls.dampingFactor = .08;
@@ -178,6 +189,13 @@ fetch('parts.json?t='+Date.now()).then(r=>r.json()).then(async data=>{   // bust
       const dir = mesh.position.clone().sub(CENTROID);
       mesh.userData.dir = dir.lengthSq()<1e-6 ? new THREE.Vector3(0,0,1) : dir.clone();
       robot.add(mesh); meshes.push(mesh);
+      // exploded label + leader line (hidden until the Labels toggle is on)
+      const ldiv=document.createElement('div'); ldiv.className='plabel'; ldiv.textContent=p.name;
+      const lbl=new CSS2DObject(ldiv); robot.add(lbl);
+      const lgeo=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3()]);
+      const line=new THREE.Line(lgeo, new THREE.LineBasicMaterial({color:0x4ea3ff,transparent:true,opacity:.55}));
+      robot.add(line); lbl.visible=line.visible=false;
+      mesh.userData.lbl=lbl; mesh.userData.line=line;
       document.getElementById('lmsg').textContent = `loading robot… ${++done}/${data.parts.length}`;
       res();
     }, undefined, ()=>{ console.warn('missing', p.file); res(); });
@@ -220,11 +238,12 @@ function select(mesh, focus){
   const specs = document.getElementById('i_specs'); specs.innerHTML='';
   const add=(k,v)=>{ specs.innerHTML+=`<div class="k">${k}</div><div>${v}</div>`; };
   add('part id', p.id);
+  if(p.mass!=null) add('mass', p.mass.toFixed(2)+' kg');
   if(p.sensor){ add('sensor', p.sensor.modality); add('range', p.sensor.range_m+' m'); add('FOV', p.sensor.fov_deg+'°'); }
   document.getElementById('info').style.display='block';
   if(focus) focusOn(mesh);
 }
-function setEmissive(mesh,v){ mesh.material.emissive.set(v?'#1d4f8c':'#000'); mesh.material.emissiveIntensity=v; }
+function setEmissive(mesh,v,col){ mesh.material.emissive.set(v?(col||'#1d4f8c'):'#000'); mesh.material.emissiveIntensity=v; }
 window.__deselect = ()=>{ if(selected) setEmissive(selected,0);
   for(const m of meshes){ m.material.opacity=1; m.material.transparent=false; }
   selected=null; document.getElementById('info').style.display='none';
@@ -278,8 +297,18 @@ document.getElementById('b_group').onclick=function(){ colorByGroup=!colorByGrou
     setEmissive(m, m===selected?0.9:0); } };
 function setBtn(id,on){ document.getElementById(id).classList.toggle('on',on); }
 
+let labelsOn=false;
+document.getElementById('b_labels').onclick=function(){ labelsOn=!labelsOn; this.classList.toggle('on',labelsOn);
+  if(labelsOn && targetExplode<0.2) setExplode(1); };          // auto-explode so labels read clearly
+let sensorsOn=false;
+document.getElementById('b_sensors').onclick=function(){ sensorsOn=!sensorsOn; this.classList.toggle('on',sensorsOn);
+  window.__deselect();
+  for(const m of meshes){ const isS=!!m.userData.sensor;
+    if(sensorsOn){ m.material.opacity=isS?1:0.10; m.material.transparent=!isS; setEmissive(m, isS?1.0:0, '#2fae7e'); }
+    else { m.material.opacity=1; m.material.transparent=false; setEmissive(m,0); } } };
+
 addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
-  renderer.setSize(innerWidth,innerHeight); });
+  renderer.setSize(innerWidth,innerHeight); labelRenderer.setSize(innerWidth,innerHeight); });
 
 // ---- loop ----
 const EXP=1.55;
@@ -289,11 +318,17 @@ function tick(){
   for(const m of meshes){ const off=m.userData.dir.clone().multiplyScalar(explode*EXP);
     off.add(m.userData.dir.clone().normalize().multiplyScalar(explode*0.12));
     m.position.copy(m.userData.home).add(off); }
+  // exploded labels + leader lines
+  for(const m of meshes){ const lbl=m.userData.lbl, line=m.userData.line; if(!lbl) continue;
+    if(labelsOn){ const out=m.userData.dir.clone().normalize().multiplyScalar(0.07+explode*0.05);
+      const lp=m.position.clone().add(out); lbl.position.copy(lp);
+      line.geometry.setFromPoints([m.position, lp]); lbl.visible=line.visible=true; }
+    else if(lbl.visible){ lbl.visible=line.visible=false; } }
   if(autoRotate) robot.rotation.z += 0.0032;
   if(tween){ tween.k=Math.min(1,tween.k+0.06); const e=tween.k<.5?2*tween.k*tween.k:1-Math.pow(-2*tween.k+2,2)/2;
     camera.position.lerpVectors(tween.p0,tween.p1,e); controls.target.lerpVectors(tween.t0,tween.t1,e);
     if(tween.k>=1) tween=null; }
-  controls.update(); renderer.render(scene,camera);
+  controls.update(); renderer.render(scene,camera); labelRenderer.render(scene,camera);
 }
 tick();
 </script>
