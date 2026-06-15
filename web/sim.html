@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BraveBot — Live Physics Sim</title>
+<style>
+  :root{ --bg0:#0b0e14; --panel:rgba(18,23,32,.82); --line:#222b39; --txt:#e7ecf3;
+         --dim:#8b97a8; --accent:#4ea3ff; --ok:#7ee0c0; --warn:#ffb454; }
+  *{ box-sizing:border-box; } html,body{ margin:0; height:100%; overflow:hidden; background:var(--bg0);
+    color:var(--txt); font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,sans-serif; }
+  canvas{ display:block; }
+  .panel{ position:absolute; background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    backdrop-filter:blur(14px); box-shadow:0 12px 40px rgba(0,0,0,.45); }
+  #title{ top:18px; left:18px; padding:13px 17px; max-width:330px; }
+  #title h1{ margin:0; font-size:17px; } #title h1 b{ color:var(--accent); }
+  #title p{ margin:4px 0 0; color:var(--dim); font-size:12px; }
+  #hud{ top:18px; right:18px; padding:13px 16px; min-width:180px; }
+  #hud .row{ display:flex; justify-content:space-between; gap:18px; font-size:13px; padding:2px 0; }
+  #hud .row span:first-child{ color:var(--dim); } #hud .big{ font-size:15px; }
+  #status{ font-weight:600; } #status.ok{ color:var(--ok); } #status.warn{ color:var(--warn); }
+  #ctrl{ left:50%; transform:translateX(-50%); bottom:18px; padding:12px 16px; display:flex; gap:13px; align-items:center; }
+  .btn{ background:#1b2433; border:1px solid var(--line); color:#dbe3ee; padding:8px 13px; border-radius:9px;
+    cursor:pointer; font-size:12.5px; } .btn:hover{ border-color:var(--accent); color:#fff; }
+  .btn.on{ background:rgba(78,163,255,.22); border-color:var(--accent); color:#fff; }
+  kbd{ background:#0d1420; border:1px solid var(--line); border-bottom-width:2px; border-radius:6px;
+    padding:1px 7px; font:12px ui-monospace,monospace; color:#cdd6e2; }
+  #hint{ position:absolute; left:18px; bottom:74px; color:var(--dim); font-size:12px; }
+  #hint kbd{ margin:0 1px; }
+  #conn{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; color:var(--dim); }
+  .spin{ width:30px;height:30px;border:3px solid #1c2533;border-top-color:var(--accent);border-radius:50%;
+    margin:0 auto 12px; animation:s 1s linear infinite;} @keyframes s{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div id="title" class="panel">
+  <h1><b>BraveBot</b> · Live Physics Sim</h1>
+  <p>Real MuJoCo rigid-body physics + balance controller, running live. The robot
+     balances on its wheels — drive it around.</p>
+</div>
+<div id="hud" class="panel">
+  <div class="row"><span>status</span><span id="status" class="ok">—</span></div>
+  <div class="row big"><span>speed</span><span id="speed">0.00 m/s</span></div>
+  <div class="row"><span>turn</span><span id="turn">0.00 rad/s</span></div>
+  <div class="row"><span>pitch</span><span id="pitch">0.0°</span></div>
+  <div class="row"><span>position</span><span id="posxy">0.0, 0.0 m</span></div>
+</div>
+<div id="ctrl" class="panel">
+  <button class="btn" id="bf">▲ fwd</button>
+  <button class="btn" id="bb">▼ back</button>
+  <button class="btn" id="bl">◀ left</button>
+  <button class="btn" id="br">right ▶</button>
+  <button class="btn" id="bs">■ stop</button>
+  <button class="btn" id="brs">⟲ reset</button>
+</div>
+<div id="hint"><kbd>↑</kbd>/<kbd>W</kbd> fwd · <kbd>↓</kbd>/<kbd>S</kbd> back · <kbd>←</kbd><kbd>→</kbd>/<kbd>A</kbd><kbd>D</kbd> turn · <kbd>space</kbd> stop · <kbd>R</kbd> reset · drag to orbit</div>
+<div id="conn"><div class="spin"></div>connecting to physics server…</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#0b0e14');
+scene.fog = new THREE.Fog('#0b0e14', 10, 30);
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.05, 200);
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = .1;
+controls.minDistance = 1; controls.maxDistance = 14;
+camera.position.set(2.2, 1.4, 2.6);
+
+scene.add(new THREE.HemisphereLight('#aab9d4','#10141c',0.75));
+const key = new THREE.DirectionalLight('#fff',2.1); key.position.set(4,7,5); key.castShadow=true;
+key.shadow.mapSize.set(2048,2048); key.shadow.camera.near=0.5; key.shadow.camera.far=40;
+key.shadow.camera.left=-8;key.shadow.camera.right=8;key.shadow.camera.top=8;key.shadow.camera.bottom=-8;
+key.shadow.bias=-0.0004; scene.add(key);
+scene.add(Object.assign(new THREE.DirectionalLight('#86b6ff',0.55),{position:new THREE.Vector3(-5,3,-3)}));
+
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(60,60),
+  new THREE.MeshStandardMaterial({color:'#0e131c',roughness:1}));
+ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
+const grid = new THREE.GridHelper(60,120,'#1c2636','#141b27');
+grid.material.transparent=true; grid.material.opacity=.55; scene.add(grid);
+
+const robot = new THREE.Group(); robot.rotation.x = -Math.PI/2; scene.add(robot);  // Z-up -> Y-up
+const byId = {}; let baseMesh = null;
+
+// load geometry from the explorer's manifest (ids + files + colors); poses come live.
+fetch('parts.json?t='+Date.now()).then(r=>r.json()).then(data=>{
+  const loader = new STLLoader(); let done=0;
+  data.parts.forEach(p=> loader.load(p.file, geo=>{
+    geo.computeVertexNormals();
+    const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+      color:new THREE.Color(p.color[0],p.color[1],p.color[2]), metalness:.55, roughness:.42 }));
+    mesh.castShadow = mesh.receiveShadow = true;
+    mesh.position.set(...p.pos);
+    mesh.quaternion.set(p.quat[1],p.quat[2],p.quat[3],p.quat[0]);
+    robot.add(mesh); byId[p.id] = mesh; if(p.id==='base') baseMesh = mesh;
+    if(++done===data.parts.length) startStream();
+  }));
+});
+
+// ---- live state stream ----
+let connected=false, fetching=false;
+function poll(){
+  if(fetching) return; fetching=true;
+  fetch('/state').then(r=>r.json()).then(s=>{
+    fetching=false;
+    if(!connected){ connected=true; document.getElementById('conn').style.display='none'; }
+    for(const p of s.parts){ const m=byId[p.id]; if(!m) continue;
+      m.position.set(...p.pos); m.quaternion.set(p.quat[1],p.quat[2],p.quat[3],p.quat[0]); }
+    // HUD
+    const st=document.getElementById('status');
+    st.textContent = s.upright ? 'balancing ✓' : 'recovering…';
+    st.className = s.upright ? 'ok' : 'warn';
+    document.getElementById('speed').textContent = s.speed.toFixed(2)+' m/s';
+    document.getElementById('pitch').textContent = (s.pitch*57.3).toFixed(1)+'°';
+    document.getElementById('posxy').textContent = s.base[0].toFixed(1)+', '+s.base[1].toFixed(1)+' m';
+  }).catch(()=>{ fetching=false; });
+}
+function startStream(){ setInterval(poll, 1000/60); }
+
+// ---- chase camera (follow the robot, keep orbit angle) ----
+const followTmp = new THREE.Vector3();
+function follow(){
+  if(!baseMesh) return;
+  baseMesh.getWorldPosition(followTmp); followTmp.y = 0.55;
+  const delta = followTmp.clone().sub(controls.target);
+  controls.target.add(delta.multiplyScalar(0.12));
+  camera.position.add(delta);
+}
+
+// ---- driving ----
+const V=0.65, W=0.6; const keys={};
+function sendCmd(){
+  let v=0,w=0;
+  if(keys.f) v+=V; if(keys.b) v-=V; if(keys.l) w+=W; if(keys.r) w-=W;
+  document.getElementById('turn').textContent=w.toFixed(2)+' rad/s';
+  fetch('/cmd',{method:'POST',body:JSON.stringify({v,w})}).catch(()=>{});
+}
+function reset(){ fetch('/reset',{method:'POST',body:'{}'}).catch(()=>{}); }
+const KEYMAP={ArrowUp:'f',KeyW:'f',ArrowDown:'b',KeyS:'b',ArrowLeft:'l',KeyA:'l',ArrowRight:'r',KeyD:'r'};
+addEventListener('keydown',e=>{ if(e.code==='Space'){keys.f=keys.b=keys.l=keys.r=false;sendCmd();e.preventDefault();return;}
+  if(e.code==='KeyR'){reset();return;} const k=KEYMAP[e.code]; if(k&&!keys[k]){keys[k]=true;sendCmd();e.preventDefault();} });
+addEventListener('keyup',e=>{ const k=KEYMAP[e.code]; if(k){keys[k]=false;sendCmd();} });
+const hold=(id,k)=>{ const el=document.getElementById(id);
+  const on=e=>{e.preventDefault();keys[k]=true;sendCmd();}, off=()=>{keys[k]=false;sendCmd();};
+  el.addEventListener('pointerdown',on); el.addEventListener('pointerup',off); el.addEventListener('pointerleave',off); };
+hold('bf','f'); hold('bb','b'); hold('bl','l'); hold('br','r');
+document.getElementById('bs').onclick=()=>{keys.f=keys.b=keys.l=keys.r=false;sendCmd();};
+document.getElementById('brs').onclick=reset;
+
+addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight); });
+(function tick(){ requestAnimationFrame(tick); follow(); controls.update(); renderer.render(scene,camera); })();
+</script>
+</body>
+</html>

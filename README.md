@@ -272,20 +272,26 @@ description/
 scripts/              build_model · view · patrol_demo · eval_balance · rl_train ·
                       rl_view · rl_play · rl_patrol · robustness_shootout ·
                       render_hero · render_patrol_video · render_physics_video ·
-                      render_rl_robust · export_manifest · export_parts · view_parts
+                      render_rl_robust · export_manifest · export_parts · view_parts ·
+                      sim_server · run_sim
 tests/                test_sim.py — regression suite (meshes, models, balance, RL env, gait)
-web/                  interactive 3D part explorer (index.html + parts.json) — see web/README.md
+web/                  3D part explorer (index.html) + live physics sim (sim.html) — see web/README.md
 renders/              hero stills + patrol, physics, RL-patrol & push-recovery videos
 ```
 
-### Interactive part explorer
+### Interactive part explorer + live physics sim
 
 ```bash
-./scripts/view_parts.sh        # opens a browser 3D viewer of all 27 parts
+./scripts/view_parts.sh        # 3D viewer of all 27 parts — slide to EXPLODE, click to inspect
+./scripts/run_sim.sh           # LIVE physics sim in the browser — drive the balancing robot
 ```
-Drag to orbit, **slide to explode** the robot apart, and click any part to inspect
-its name / subsystem / sensor specs. Built with three.js over the same meshes the
-physics sim uses ([web/README.md](web/README.md)).
+- **Part explorer** ([web/index.html](web/index.html)): drag to orbit, slide to
+  explode the robot apart, click any part for its subsystem / sensor specs.
+- **Live physics sim** ([web/sim.html](web/sim.html)): the real MuJoCo physics +
+  balance controller run server-side and stream live poses to the browser — the
+  robot balances on its wheels and you drive it around with the arrow keys.
+
+Both are three.js over the same meshes the physics sim uses ([web/README.md](web/README.md)).
 
 ## Regenerating everything
 

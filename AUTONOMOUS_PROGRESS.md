@@ -31,6 +31,13 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- NEW FEATURE (user request): LIVE PHYSICS SIMULATOR in the browser. scripts/sim_server.py
+  runs the real MuJoCo rigid-body physics + balance controller in a background thread (500Hz,
+  real-time) and streams live per-part poses (with the mesh-recenter correction) over a stdlib
+  HTTP server; web/sim.html (three.js) renders them + sends drive commands. The robot BALANCES on
+  its wheels and you DRIVE it (arrows/WASD), chase-cam, HUD (balance/speed/pitch/pos), auto-recover
+  on tip. Verified server-side: balances in place, drove 1.5m forward + turned (yaw 0->0.26),
+  upright throughout; 27 parts streamed. ./scripts/run_sim.sh (port 8001). No extra deps.
 - NEW FEATURE (user request): INTERACTIVE 3D PART EXPLORER. An in-browser, presentable
   exploded-view interface of the whole robot — all 27 parts (9 real LimX TRON 1 links +
   18 BraveBot components). scripts/export_parts.py reads the kinematic model + component

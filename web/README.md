@@ -28,7 +28,21 @@ Three.js loads from a CDN, so the page needs internet the first time.)
   Structure, Compute, Sensors, Power, Comms, Safety) for a teaching view.
 - **Auto-rotate** for a turntable presentation.
 
-## How it's built
+## Live physics simulator (`sim.html`)
+
+```bash
+./scripts/run_sim.sh            # serves on :8001 and opens the live sim
+```
+This runs the **actual MuJoCo rigid-body physics + the balance controller** in a
+background thread (500 Hz, real-time) and streams the live part poses to the
+browser, which renders them and sends back drive commands. The robot **balances on
+its wheels** (it's a high-CoM single-axle inverted pendulum) and you **drive it
+around** with <kbd>↑↓</kbd>/<kbd>WS</kbd> (forward/back) and <kbd>←→</kbd>/<kbd>AD</kbd>
+(turn); <kbd>space</kbd> stops, <kbd>R</kbd> resets, drag to orbit (chase-cam
+follows). HUD shows balance status, speed, body pitch, and position. It auto-recovers
+if it ever tips. `scripts/sim_server.py` is the server (stdlib only, no extra deps).
+
+## How it's built (explorer)
 
 - `scripts/export_parts.py` loads the kinematic MuJoCo model + the component
   registry and writes `web/parts.json`: for every part, its mesh file, exact world
