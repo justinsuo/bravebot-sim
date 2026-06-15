@@ -39,9 +39,12 @@ GROUP_LABEL = {"chassis": "Chassis", "leg": "Legs", "wheel": "Wheels",
 
 
 def main():
-    m = mujoco.MjModel.from_xml_path(os.path.join(ROOT, "description", "mjcf", "bravebot.xml"))
-    d = mujoco.MjData(m)
-    mujoco.mj_forward(m, d)
+    # Pose the robot in its ASSEMBLED standing stance (mirrored per-joint hip/knee
+    # bend + correct base height) — NOT the zero-joint default, where the legs stick
+    # out straight and float above the wheels. BraveBot.__init__ applies that stance.
+    from bravebot_sim import BraveBot, model_path
+    bot = BraveBot(model_path())
+    m, d = bot.model, bot.data
 
     comp_by_id = {c.id: c for c in R.COMPONENTS}
     sensor_comp = {c.id: c.sensor for c in R.SENSOR_COMPONENTS}
