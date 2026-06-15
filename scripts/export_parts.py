@@ -53,12 +53,21 @@ def main():
     for g in range(m.ngeom):
         if m.geom_type[g] != mujoco.mjtGeom.mjGEOM_MESH:
             continue
-        mesh_name = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_MESH, m.geom_dataid[g])
+        mid = m.geom_dataid[g]
+        mesh_name = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_MESH, mid)
         if mesh_name is None or not mesh_name.startswith("m_"):
             continue
         key = mesh_name[2:]                                   # strip "m_"
-        pos = d.geom_xpos[g].copy()
-        quat = np.zeros(4); mujoco.mju_mat2Quat(quat, d.geom_xmat[g])   # [w,x,y,z]
+        # MuJoCo recenters/reorients each mesh to its inertial frame at compile time and
+        # places those *processed* verts at geom_xpos/geom_xmat. The web viewer loads the
+        # RAW STL, so we must bake the inverse (mesh_pos/mesh_quat) into the transform:
+        #   world(v_raw) = geom_xpos + geom_xmat · R(mesh_quat)ᵀ · (v_raw − mesh_pos)
+        #               = p_corrected + R_corrected · v_raw
+        gmat = d.geom_xmat[g].reshape(3, 3)
+        Rmq = np.zeros(9); mujoco.mju_quat2Mat(Rmq, m.mesh_quat[mid]); Rmq = Rmq.reshape(3, 3)
+        Rc = gmat @ Rmq.T
+        pos = d.geom_xpos[g] - Rc @ m.mesh_pos[mid]
+        quat = np.zeros(4); mujoco.mju_mat2Quat(quat, Rc.flatten())    # [w,x,y,z]
         rgba = m.geom_rgba[g].copy()
 
         if key in TRON1:

@@ -1,9 +1,9 @@
 {
  "robot": "BraveBot \u2014 wheel-legged autonomous inspection robot (LimX WF_TRON1A base)",
  "centroid": [
-  0.01823,
-  0.00429,
-  0.89318
+  0.01231,
+  0.00407,
+  0.90988
  ],
  "n_parts": 27,
  "groups": [
@@ -25,15 +25,15 @@
    "group_label": "Chassis",
    "file": "../description/meshes/tron1/base_Link.stl",
    "pos": [
-    0.04181,
-    -9e-05,
-    0.67214
+    -0.0,
+    0.0,
+    0.79766
    ],
    "quat": [
-    0.956837,
-    -0.00807,
-    -0.290497,
-    -0.002946
+    1.0,
+    -0.0,
+    0.0,
+    0.0
    ],
    "color": [
     0.82,
@@ -50,9 +50,9 @@
    "group_label": "Comms",
    "file": "../description/meshes/bravebot/antennaL.stl",
    "pos": [
-    -0.0,
+    0.0,
     0.07,
-    1.5014
+    1.50766
    ],
    "quat": [
     1.0,
@@ -75,9 +75,9 @@
    "group_label": "Comms",
    "file": "../description/meshes/bravebot/antennaR.stl",
    "pos": [
-    -0.0,
+    0.0,
     -0.07,
-    1.5014
+    1.50766
    ],
    "quat": [
     1.0,
@@ -100,15 +100,15 @@
    "group_label": "Compute",
    "file": "../description/meshes/bravebot/display.stl",
    "pos": [
-    0.17043,
-    -0.0,
-    1.0146
+    0.165,
+    0.0,
+    1.01266
    ],
    "quat": [
-    0.707091,
-    0.707091,
-    0.004732,
-    -0.004732
+    1.0,
+    0.0,
+    0.0,
+    0.0
    ],
    "color": [
     0.34,
@@ -125,15 +125,15 @@
    "group_label": "Compute",
    "file": "../description/meshes/bravebot/edgeai.stl",
    "pos": [
-    -0.02571,
-    0.00041,
-    1.04221
+    -0.03,
+    -0.0,
+    1.01766
    ],
    "quat": [
-    0.624513,
-    0.6142,
-    -0.347461,
-    0.334683
+    1.0,
+    -0.0,
+    0.0,
+    0.0
    ],
    "color": [
     0.34,
@@ -150,15 +150,15 @@
    "group_label": "Legs",
    "file": "../description/meshes/tron1/abad_L_Link.stl",
    "pos": [
-    -0.00893,
-    0.15092,
-    0.54155
+    0.05556,
+    0.105,
+    0.53746
    ],
    "quat": [
-    0.663463,
-    0.579945,
-    0.324537,
-    0.343739
+    1.0,
+    -0.0,
+    0.0,
+    0.0
    ],
    "color": [
     0.62,
@@ -175,15 +175,15 @@
    "group_label": "Legs",
    "file": "../description/meshes/tron1/abad_R_Link.stl",
    "pos": [
-    -0.00706,
-    -0.15263,
-    0.54202
+    0.05556,
+    -0.105,
+    0.53746
    ],
    "quat": [
-    0.340736,
-    0.311561,
-    0.588531,
-    0.663671
+    1.0,
+    -0.0,
+    -0.0,
+    0.0
    ],
    "color": [
     0.62,
@@ -200,15 +200,15 @@
    "group_label": "Legs",
    "file": "../description/meshes/tron1/hip_L_Link.stl",
    "pos": [
-    -0.08435,
-    0.0849,
-    0.48687
+    -0.02144,
+    0.1255,
+    0.53746
    ],
    "quat": [
-    0.903745,
-    0.071241,
-    0.42128,
-    0.026308
+    0.988771,
+    -0.0,
+    0.149438,
+    -0.0
    ],
    "color": [
     0.62,
@@ -225,15 +225,15 @@
    "group_label": "Legs",
    "file": "../description/meshes/tron1/hip_R_Link.stl",
    "pos": [
-    -0.08438,
-    -0.08482,
-    0.48699
+    -0.02144,
+    -0.1255,
+    0.53746
    ],
    "quat": [
-    0.903655,
-    -0.073718,
-    0.420752,
-    -0.030675
+    0.988771,
+    0.0,
+    0.149438,
+    -0.0
    ],
    "color": [
     0.62,
@@ -250,15 +250,15 @@
    "group_label": "Legs",
    "file": "../description/meshes/tron1/knee_L_Link.stl",
    "pos": [
-    -0.09164,
-    0.11167,
-    0.19727
+    -0.24152,
+    0.105,
+    0.33358
    ],
    "quat": [
-    0.655377,
-    -0.259514,
-    -0.302446,
-    0.641607
+    0.988771,
+    0.0,
+    -0.149438,
+    -0.0
    ],
    "color": [
     0.62,
@@ -275,15 +275,15 @@
    "group_label": "Legs",
    "file": "../description/meshes/tron1/knee_R_Link.stl",
    "pos": [
-    -0.09301,
-    -0.11176,
-    0.19777
+    -0.24152,
+    -0.105,
+    0.33358
    ],
    "quat": [
-    0.646495,
-    -0.301289,
-    -0.26209,
-    0.65006
+    0.988771,
+    -0.0,
+    -0.149438,
+    0.0
    ],
    "color": [
     0.62,
@@ -300,15 +300,15 @@
    "group_label": "Power",
    "file": "../description/meshes/bravebot/battery.stl",
    "pos": [
-    0.03937,
-    0.00086,
-    0.92147
+    0.02,
+    -0.0,
+    0.91766
    ],
    "quat": [
-    0.497155,
-    0.509993,
-    -0.4956,
-    0.497116
+    1.0,
+    -0.0,
+    0.0,
+    0.0
    ],
    "color": [
     0.95,
@@ -327,7 +327,7 @@
    "pos": [
     -0.1,
     0.11,
-    1.11272
+    1.10766
    ],
    "quat": [
     1.0,
@@ -350,7 +350,7 @@
    "group_label": "Sensors",
    "file": "../description/meshes/bravebot/acoustic.stl",
    "pos": [
-    0.14526,
+    0.14,
     0.075,
     1.37766
    ],
@@ -379,15 +379,15 @@
    "group_label": "Sensors",
    "file": "../description/meshes/bravebot/gas.stl",
    "pos": [
-    0.15451,
-    -0.00046,
-    1.3328
+    0.14,
+    0.0,
+    1.33266
    ],
    "quat": [
-    -0.021966,
-    0.705087,
-    0.002781,
-    0.708775
+    1.0,
+    0.0,
+    0.0,
+    0.0
    ],
    "color": [
     0.55,
@@ -408,15 +408,15 @@
    "group_label": "Sensors",
    "file": "../description/meshes/bravebot/hdcam.stl",
    "pos": [
-    0.16238,
+    0.145,
     -0.075,
     1.37766
    ],
    "quat": [
-    -0.0,
-    0.707107,
+    1.0,
     0.0,
-    0.707107
+    0.0,
+    0.0
    ],
    "color": [
     1.0,
@@ -437,15 +437,15 @@
    "group_label": "Sensors",
    "file": "../description/meshes/bravebot/nav.stl",
    "pos": [
-    0.14832,
-    -0.0,
-    1.29376
+    0.145,
+    0.0,
+    1.27766
    ],
    "quat": [
-    0.704737,
-    0.704737,
-    -0.057847,
-    0.057847
+    1.0,
+    0.0,
+    -0.0,
+    0.0
    ],
    "color": [
     0.7,
@@ -466,15 +466,15 @@
    "group_label": "Sensors",
    "file": "../description/meshes/bravebot/thermal.stl",
    "pos": [
-    0.15695,
-    -0.0,
+    0.145,
+    0.0,
     1.39766
    ],
    "quat": [
-    -0.0,
-    0.707107,
+    1.0,
     0.0,
-    0.707107
+    0.0,
+    0.0
    ],
    "color": [
     1.0,
@@ -495,15 +495,15 @@
    "group_label": "Structure",
    "file": "../description/meshes/bravebot/head.stl",
    "pos": [
-    0.03362,
-    0.00196,
-    1.38185
+    0.02,
+    -0.0,
+    1.36766
    ],
    "quat": [
-    0.513895,
-    0.526831,
-    -0.47422,
-    0.483193
+    1.0,
+    -0.0,
+    -0.0,
+    0.0
    ],
    "color": [
     0.86,
@@ -520,15 +520,15 @@
    "group_label": "Structure",
    "file": "../description/meshes/bravebot/mast.stl",
    "pos": [
-    0.02125,
-    0.0,
-    1.20171
+    0.02,
+    -0.0,
+    1.22766
    ],
    "quat": [
-    0.707088,
-    0.005113,
-    0.005113,
-    0.707088
+    1.0,
+    0.0,
+    -0.0,
+    0.0
    ],
    "color": [
     0.86,
@@ -546,14 +546,14 @@
    "file": "../description/meshes/bravebot/payload.stl",
    "pos": [
     0.02,
-    -0.0,
-    0.85286
+    0.0,
+    0.84266
    ],
    "quat": [
-    0.5,
-    0.5,
-    -0.5,
-    0.5
+    1.0,
+    0.0,
+    0.0,
+    0.0
    ],
    "color": [
     0.86,
@@ -570,15 +570,15 @@
    "group_label": "Structure",
    "file": "../description/meshes/bravebot/railL.stl",
    "pos": [
-    0.01829,
+    0.03,
     0.176,
     0.69766
    ],
    "quat": [
-    0.707107,
+    1.0,
     0.0,
     0.0,
-    0.707107
+    0.0
    ],
    "color": [
     0.86,
@@ -595,15 +595,15 @@
    "group_label": "Structure",
    "file": "../description/meshes/bravebot/railR.stl",
    "pos": [
-    0.01829,
+    0.03,
     -0.176,
     0.69766
    ],
    "quat": [
-    0.707107,
+    1.0,
     0.0,
     0.0,
-    0.707107
+    0.0
    ],
    "color": [
     0.86,
@@ -620,15 +620,15 @@
    "group_label": "Structure",
    "file": "../description/meshes/bravebot/rear.stl",
    "pos": [
-    -0.11591,
-    0.0,
-    1.01641
+    -0.12,
+    -0.0,
+    1.01266
    ],
    "quat": [
-    0.707065,
-    0.707065,
-    0.00769,
-    -0.00769
+    1.0,
+    0.0,
+    -0.0,
+    0.0
    ],
    "color": [
     0.86,
@@ -645,15 +645,15 @@
    "group_label": "Structure",
    "file": "../description/meshes/bravebot/torso.stl",
    "pos": [
-    0.01563,
-    0.00479,
-    1.01037
+    0.02,
+    -0.0,
+    1.01266
    ],
    "quat": [
-    0.996658,
-    0.027651,
-    0.03487,
-    0.068494
+    1.0,
+    0.0,
+    0.0,
+    0.0
    ],
    "color": [
     0.86,
@@ -670,15 +670,15 @@
    "group_label": "Wheels",
    "file": "../description/meshes/tron1/wheel_L_Link.stl",
    "pos": [
-    -0.02141,
-    0.15627,
-    0.12969
+    -0.02144,
+    0.1485,
+    0.1297
    ],
    "quat": [
-    0.702638,
-    0.079377,
-    0.079377,
-    0.702637
+    0.988771,
+    0.0,
+    -0.149438,
+    0.0
    ],
    "color": [
     0.2,
@@ -696,14 +696,14 @@
    "file": "../description/meshes/tron1/wheel_R_Link.stl",
    "pos": [
     -0.02144,
-    -0.15627,
-    0.12967
+    -0.1485,
+    0.1297
    ],
    "quat": [
-    0.496796,
-    0.503184,
-    0.503183,
-    0.496797
+    0.988771,
+    0.0,
+    -0.149438,
+    -0.0
    ],
    "color": [
     0.2,
