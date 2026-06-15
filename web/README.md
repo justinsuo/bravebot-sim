@@ -4,6 +4,8 @@ A presentable, browser-based 3D viewer that loads **every part of the robot**
 (9 real LimX TRON 1 links + 18 BraveBot components = 27 parts) at their exact
 assembled poses, and lets you **explode** the robot apart to inspect each piece.
 
+![BraveBot assembled](../renders/part_explorer.png)
+
 ## Run it
 
 ```bash
