@@ -1,0 +1,717 @@
+{
+ "robot": "BraveBot \u2014 wheel-legged autonomous inspection robot (LimX WF_TRON1A base)",
+ "centroid": [
+  0.02126,
+  0.00429,
+  0.98859
+ ],
+ "n_parts": 27,
+ "groups": [
+  "Chassis",
+  "Comms",
+  "Compute",
+  "Legs",
+  "Power",
+  "Safety",
+  "Sensors",
+  "Structure",
+  "Wheels"
+ ],
+ "parts": [
+  {
+   "id": "base",
+   "name": "TRON 1 base / torso",
+   "group": "chassis",
+   "group_label": "Chassis",
+   "file": "../description/meshes/tron1/base_Link.stl",
+   "pos": [
+    0.04181,
+    -9e-05,
+    0.784
+   ],
+   "quat": [
+    0.956837,
+    -0.00807,
+    -0.290497,
+    -0.002946
+   ],
+   "color": [
+    0.82,
+    0.84,
+    0.88
+   ],
+   "desc": "The LimX WF_TRON1A base \u2014 battery, mainboard, IMU and the wheel/leg actuator stack.",
+   "sensor": null
+  },
+  {
+   "id": "antennaL",
+   "name": "Communication antenna (left)",
+   "group": "comms",
+   "group_label": "Comms",
+   "file": "../description/meshes/bravebot/antennaL.stl",
+   "pos": [
+    -0.0,
+    0.07,
+    1.61327
+   ],
+   "quat": [
+    1.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "color": [
+    0.55,
+    0.58,
+    0.64
+   ],
+   "desc": "Network sync and command / communication link.",
+   "sensor": null
+  },
+  {
+   "id": "antennaR",
+   "name": "Communication antenna (right)",
+   "group": "comms",
+   "group_label": "Comms",
+   "file": "../description/meshes/bravebot/antennaR.stl",
+   "pos": [
+    -0.0,
+    -0.07,
+    1.61327
+   ],
+   "quat": [
+    1.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "color": [
+    0.55,
+    0.58,
+    0.64
+   ],
+   "desc": "Network sync and command / communication link.",
+   "sensor": null
+  },
+  {
+   "id": "display",
+   "name": "Front AI display panel",
+   "group": "compute",
+   "group_label": "Compute",
+   "file": "../description/meshes/bravebot/display.stl",
+   "pos": [
+    0.17043,
+    -0.0,
+    1.12646
+   ],
+   "quat": [
+    0.707091,
+    0.707091,
+    0.004732,
+    -0.004732
+   ],
+   "color": [
+    0.34,
+    0.38,
+    0.46
+   ],
+   "desc": "Local status, patrol mode and operator feedback.",
+   "sensor": null
+  },
+  {
+   "id": "edgeai",
+   "name": "Edge AI core",
+   "group": "compute",
+   "group_label": "Compute",
+   "file": "../description/meshes/bravebot/edgeai.stl",
+   "pos": [
+    -0.02571,
+    0.00041,
+    1.15407
+   ],
+   "quat": [
+    0.624513,
+    0.6142,
+    -0.347461,
+    0.334683
+   ],
+   "color": [
+    0.34,
+    0.38,
+    0.46
+   ],
+   "desc": "Local multimodal reasoning: fusion, diagnosis, risk scoring. No cloud.",
+   "sensor": null
+  },
+  {
+   "id": "abadL",
+   "name": "Left ab/ad actuator",
+   "group": "leg",
+   "group_label": "Legs",
+   "file": "../description/meshes/tron1/abad_L_Link.stl",
+   "pos": [
+    -0.00893,
+    0.15092,
+    0.65341
+   ],
+   "quat": [
+    0.663463,
+    0.579945,
+    0.324537,
+    0.343739
+   ],
+   "color": [
+    0.62,
+    0.66,
+    0.72
+   ],
+   "desc": "Left hip ab/adduction joint \u2014 swings the leg laterally.",
+   "sensor": null
+  },
+  {
+   "id": "abadR",
+   "name": "Right ab/ad actuator",
+   "group": "leg",
+   "group_label": "Legs",
+   "file": "../description/meshes/tron1/abad_R_Link.stl",
+   "pos": [
+    -0.00706,
+    -0.15263,
+    0.65389
+   ],
+   "quat": [
+    0.340736,
+    0.311561,
+    0.588531,
+    0.663671
+   ],
+   "color": [
+    0.62,
+    0.66,
+    0.72
+   ],
+   "desc": "Right hip ab/adduction joint \u2014 swings the leg laterally.",
+   "sensor": null
+  },
+  {
+   "id": "hipL",
+   "name": "Left hip / thigh",
+   "group": "leg",
+   "group_label": "Legs",
+   "file": "../description/meshes/tron1/hip_L_Link.stl",
+   "pos": [
+    -0.06659,
+    0.0849,
+    0.5824
+   ],
+   "quat": [
+    0.956552,
+    0.06651,
+    0.281496,
+    0.036659
+   ],
+   "color": [
+    0.62,
+    0.66,
+    0.72
+   ],
+   "desc": "Left hip-pitch link (thigh) \u2014 drives the leg forward/back.",
+   "sensor": null
+  },
+  {
+   "id": "hipR",
+   "name": "Right hip / thigh",
+   "group": "leg",
+   "group_label": "Legs",
+   "file": "../description/meshes/tron1/hip_R_Link.stl",
+   "pos": [
+    -0.06666,
+    -0.08482,
+    0.58251
+   ],
+   "quat": [
+    0.956384,
+    -0.068306,
+    0.280987,
+    -0.041347
+   ],
+   "color": [
+    0.62,
+    0.66,
+    0.72
+   ],
+   "desc": "Right hip-pitch link (thigh) \u2014 drives the leg forward/back.",
+   "sensor": null
+  },
+  {
+   "id": "kneeL",
+   "name": "Left knee / shank",
+   "group": "leg",
+   "group_label": "Legs",
+   "file": "../description/meshes/tron1/knee_L_Link.stl",
+   "pos": [
+    -0.06853,
+    0.11167,
+    0.215
+   ],
+   "quat": [
+    0.693215,
+    -0.160719,
+    -0.201111,
+    0.673184
+   ],
+   "color": [
+    0.62,
+    0.66,
+    0.72
+   ],
+   "desc": "Left knee link (shank) \u2014 bends to set stance height.",
+   "sensor": null
+  },
+  {
+   "id": "kneeR",
+   "name": "Right knee / shank",
+   "group": "leg",
+   "group_label": "Legs",
+   "file": "../description/meshes/tron1/knee_R_Link.stl",
+   "pos": [
+    -0.0697,
+    -0.11176,
+    0.21588
+   ],
+   "quat": [
+    0.678402,
+    -0.200763,
+    -0.162535,
+    0.687784
+   ],
+   "color": [
+    0.62,
+    0.66,
+    0.72
+   ],
+   "desc": "Right knee link (shank) \u2014 bends to set stance height.",
+   "sensor": null
+  },
+  {
+   "id": "battery",
+   "name": "Hot-swappable battery",
+   "group": "power",
+   "group_label": "Power",
+   "file": "../description/meshes/bravebot/battery.stl",
+   "pos": [
+    0.03937,
+    0.00086,
+    1.03333
+   ],
+   "quat": [
+    0.497155,
+    0.509993,
+    -0.4956,
+    0.497116
+   ],
+   "color": [
+    0.95,
+    0.55,
+    0.18
+   ],
+   "desc": "2-4 h runtime, ~10 s swap for continuous 24/7 patrol.",
+   "sensor": null
+  },
+  {
+   "id": "estop",
+   "name": "Emergency stop",
+   "group": "safety",
+   "group_label": "Safety",
+   "file": "../description/meshes/bravebot/estop.stl",
+   "pos": [
+    -0.1,
+    0.11,
+    1.22459
+   ],
+   "quat": [
+    1.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "color": [
+    0.9,
+    0.25,
+    0.2
+   ],
+   "desc": "Hardware safety cut-off for operation around people and equipment.",
+   "sensor": null
+  },
+  {
+   "id": "acoustic",
+   "name": "Acoustic imaging array",
+   "group": "sensor",
+   "group_label": "Sensors",
+   "file": "../description/meshes/bravebot/acoustic.stl",
+   "pos": [
+    0.14526,
+    0.075,
+    1.48952
+   ],
+   "quat": [
+    1.0,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "color": [
+    0.36,
+    0.85,
+    1.0
+   ],
+   "desc": "Detects ultrasonic leaks, partial discharge and bearing wear.",
+   "sensor": {
+    "modality": "acoustic",
+    "range_m": 8.0,
+    "fov_deg": 35.0
+   }
+  },
+  {
+   "id": "gas",
+   "name": "Gas / laser telemetry sensor",
+   "group": "sensor",
+   "group_label": "Sensors",
+   "file": "../description/meshes/bravebot/gas.stl",
+   "pos": [
+    0.15451,
+    -0.00046,
+    1.44466
+   ],
+   "quat": [
+    -0.021966,
+    0.705087,
+    0.002781,
+    0.708775
+   ],
+   "color": [
+    0.55,
+    0.95,
+    0.55
+   ],
+   "desc": "VOC / CO / H2 off-gas; optional OGI / TDLAS for industrial gas.",
+   "sensor": {
+    "modality": "gas",
+    "range_m": 4.0,
+    "fov_deg": 45.0
+   }
+  },
+  {
+   "id": "hdcam",
+   "name": "HD visual AI camera",
+   "group": "sensor",
+   "group_label": "Sensors",
+   "file": "../description/meshes/bravebot/hdcam.stl",
+   "pos": [
+    0.16238,
+    -0.075,
+    1.48952
+   ],
+   "quat": [
+    -0.0,
+    0.707107,
+    0.0,
+    0.707107
+   ],
+   "color": [
+    1.0,
+    0.85,
+    0.35
+   ],
+   "desc": "Reads gauges, assets, doors, seals and indicator lights.",
+   "sensor": {
+    "modality": "visual",
+    "range_m": 10.0,
+    "fov_deg": 30.0
+   }
+  },
+  {
+   "id": "nav",
+   "name": "Navigation sensor cluster",
+   "group": "sensor",
+   "group_label": "Sensors",
+   "file": "../description/meshes/bravebot/nav.stl",
+   "pos": [
+    0.14832,
+    -0.0,
+    1.40562
+   ],
+   "quat": [
+    0.704737,
+    0.704737,
+    -0.057847,
+    0.057847
+   ],
+   "color": [
+    0.7,
+    0.55,
+    1.0
+   ],
+   "desc": "Mapping, obstacle avoidance and route following.",
+   "sensor": {
+    "modality": "nav",
+    "range_m": 15.0,
+    "fov_deg": 60.0
+   }
+  },
+  {
+   "id": "thermal",
+   "name": "Thermal camera",
+   "group": "sensor",
+   "group_label": "Sensors",
+   "file": "../description/meshes/bravebot/thermal.stl",
+   "pos": [
+    0.15695,
+    -0.0,
+    1.50952
+   ],
+   "quat": [
+    -0.0,
+    0.707107,
+    0.0,
+    0.707107
+   ],
+   "color": [
+    1.0,
+    0.55,
+    0.3
+   ],
+   "desc": "Maps hotspots across UPS, PDU, cable joints, GPUs and racks.",
+   "sensor": {
+    "modality": "thermal",
+    "range_m": 12.0,
+    "fov_deg": 24.0
+   }
+  },
+  {
+   "id": "head",
+   "name": "Sensor head housing",
+   "group": "structural",
+   "group_label": "Structure",
+   "file": "../description/meshes/bravebot/head.stl",
+   "pos": [
+    0.03362,
+    0.00196,
+    1.49371
+   ],
+   "quat": [
+    0.513895,
+    0.526831,
+    -0.47422,
+    0.483193
+   ],
+   "color": [
+    0.86,
+    0.88,
+    0.92
+   ],
+   "desc": "Houses the four-sensor stack at the top of the mast.",
+   "sensor": null
+  },
+  {
+   "id": "mast",
+   "name": "Sensor mast",
+   "group": "structural",
+   "group_label": "Structure",
+   "file": "../description/meshes/bravebot/mast.stl",
+   "pos": [
+    0.02125,
+    0.0,
+    1.31358
+   ],
+   "quat": [
+    0.707088,
+    0.005113,
+    0.005113,
+    0.707088
+   ],
+   "color": [
+    0.86,
+    0.88,
+    0.92
+   ],
+   "desc": "Raises the sensor head for an elevated vantage over racks and aisles.",
+   "sensor": null
+  },
+  {
+   "id": "payload",
+   "name": "Payload adapter frame",
+   "group": "structural",
+   "group_label": "Structure",
+   "file": "../description/meshes/bravebot/payload.stl",
+   "pos": [
+    0.02,
+    -0.0,
+    0.96473
+   ],
+   "quat": [
+    0.5,
+    0.5,
+    -0.5,
+    0.5
+   ],
+   "color": [
+    0.86,
+    0.88,
+    0.92
+   ],
+   "desc": "Custom mounting layer bolted on top of the TRON 1 base.",
+   "sensor": null
+  },
+  {
+   "id": "railL",
+   "name": "Protective rail (left)",
+   "group": "structural",
+   "group_label": "Structure",
+   "file": "../description/meshes/bravebot/railL.stl",
+   "pos": [
+    0.01829,
+    0.176,
+    0.80952
+   ],
+   "quat": [
+    0.707107,
+    0.0,
+    0.0,
+    0.707107
+   ],
+   "color": [
+    0.86,
+    0.88,
+    0.92
+   ],
+   "desc": "Impact rail cage and field handling point.",
+   "sensor": null
+  },
+  {
+   "id": "railR",
+   "name": "Protective rail (right)",
+   "group": "structural",
+   "group_label": "Structure",
+   "file": "../description/meshes/bravebot/railR.stl",
+   "pos": [
+    0.01829,
+    -0.176,
+    0.80952
+   ],
+   "quat": [
+    0.707107,
+    0.0,
+    0.0,
+    0.707107
+   ],
+   "color": [
+    0.86,
+    0.88,
+    0.92
+   ],
+   "desc": "Impact rail cage and field handling point.",
+   "sensor": null
+  },
+  {
+   "id": "rear",
+   "name": "Rear service panel",
+   "group": "structural",
+   "group_label": "Structure",
+   "file": "../description/meshes/bravebot/rear.stl",
+   "pos": [
+    -0.11591,
+    0.0,
+    1.12828
+   ],
+   "quat": [
+    0.707065,
+    0.707065,
+    0.00769,
+    -0.00769
+   ],
+   "color": [
+    0.86,
+    0.88,
+    0.92
+   ],
+   "desc": "Tool-free maintenance access and modular service layout.",
+   "sensor": null
+  },
+  {
+   "id": "torso",
+   "name": "Rugged inspection torso",
+   "group": "structural",
+   "group_label": "Structure",
+   "file": "../description/meshes/bravebot/torso.stl",
+   "pos": [
+    0.01563,
+    0.00479,
+    1.12224
+   ],
+   "quat": [
+    0.996658,
+    0.027651,
+    0.03487,
+    0.068494
+   ],
+   "color": [
+    0.86,
+    0.88,
+    0.92
+   ],
+   "desc": "Sealed IP66 enclosure housing inspection electronics and edge compute.",
+   "sensor": null
+  },
+  {
+   "id": "wheelL",
+   "name": "Left drive wheel",
+   "group": "wheel",
+   "group_label": "Wheels",
+   "file": "../description/meshes/tron1/wheel_L_Link.stl",
+   "pos": [
+    -0.02142,
+    0.15627,
+    0.12969
+   ],
+   "quat": [
+    0.682886,
+    0.183486,
+    0.183487,
+    0.682885
+   ],
+   "color": [
+    0.2,
+    0.21,
+    0.24
+   ],
+   "desc": "Left hub-motor wheel \u2014 gripped tire, does the driving + balancing.",
+   "sensor": null
+  },
+  {
+   "id": "wheelR",
+   "name": "Right drive wheel",
+   "group": "wheel",
+   "group_label": "Wheels",
+   "file": "../description/meshes/tron1/wheel_R_Link.stl",
+   "pos": [
+    -0.02145,
+    -0.15627,
+    0.12967
+   ],
+   "quat": [
+    0.416023,
+    0.571774,
+    0.571773,
+    0.416024
+   ],
+   "color": [
+    0.2,
+    0.21,
+    0.24
+   ],
+   "desc": "Right hub-motor wheel \u2014 gripped tire, does the driving + balancing.",
+   "sensor": null
+  }
+ ]
+}

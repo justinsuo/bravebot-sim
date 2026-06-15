@@ -31,6 +31,17 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- NEW FEATURE (user request): INTERACTIVE 3D PART EXPLORER. An in-browser, presentable
+  exploded-view interface of the whole robot — all 27 parts (9 real LimX TRON 1 links +
+  18 BraveBot components). scripts/export_parts.py reads the kinematic model + component
+  registry -> web/parts.json (every part's mesh, exact world pose, color, subsystem,
+  description, sensor specs). web/index.html is a self-contained three.js app
+  (STLLoader + OrbitControls): explode slider/button (radial blossom from the centroid),
+  click-to-inspect (dim others + info card), grouped Parts panel, color-by-subsystem,
+  auto-rotate. scripts/view_parts.sh serves + opens it. Verified all 27 meshes serve 200
+  over HTTP. NOTE on "Use Fable 5": I made a REAL API call to claude-fable-5 — it returned
+  "Claude Fable 5 is not available. Please use Opus 4.8." (gated / fable-mythos-access), so
+  I built this with Opus 4.8 (me) directly. Honest, not fabricated.
 - cycle 31: VERIFIED the deployment spec's trickiest convention (projected gravity, the
   #1 sim-to-real bug source). Reconstructed it the way a real-robot deployer would — from
   the IMU world-from-body quaternion, g_body = R^T·[0,0,-1] — and confirmed it matches the

@@ -272,10 +272,20 @@ description/
 scripts/              build_model · view · patrol_demo · eval_balance · rl_train ·
                       rl_view · rl_play · rl_patrol · robustness_shootout ·
                       render_hero · render_patrol_video · render_physics_video ·
-                      render_rl_robust · export_manifest
+                      render_rl_robust · export_manifest · export_parts · view_parts
 tests/                test_sim.py — regression suite (meshes, models, balance, RL env, gait)
+web/                  interactive 3D part explorer (index.html + parts.json) — see web/README.md
 renders/              hero stills + patrol, physics, RL-patrol & push-recovery videos
 ```
+
+### Interactive part explorer
+
+```bash
+./scripts/view_parts.sh        # opens a browser 3D viewer of all 27 parts
+```
+Drag to orbit, **slide to explode** the robot apart, and click any part to inspect
+its name / subsystem / sensor specs. Built with three.js over the same meshes the
+physics sim uses ([web/README.md](web/README.md)).
 
 ## Regenerating everything
 
