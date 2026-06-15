@@ -118,7 +118,10 @@ def main():
     venv = VecEnv([thunk for _ in range(args.envs)])
 
     if resume:
-        model.set_env(venv)
+        # reload WITH the venv so the rollout buffer resizes to args.envs — lets a
+        # fine-tune resume with a different --envs than the saved run (set_env alone
+        # asserts equal n_envs and refuses).
+        model = PPO.load(ZIP, env=venv, device="cpu")
     else:
         model = PPO("MlpPolicy", venv, verbose=0, seed=args.seed,
                     n_steps=1024, batch_size=8192, n_epochs=5, gae_lambda=0.95,
