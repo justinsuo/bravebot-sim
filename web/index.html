@@ -159,7 +159,7 @@ function matFor(p){
 }
 
 const loader = new STLLoader();
-fetch('parts.json').then(r=>r.json()).then(async data=>{
+fetch('parts.json?t='+Date.now()).then(r=>r.json()).then(async data=>{   // bust browser cache
   document.getElementById('subtitle').textContent =
     data.robot + ' — drag to orbit, click any part, slide to explode.';
   document.getElementById('pcount').textContent = data.n_parts + ' parts';
