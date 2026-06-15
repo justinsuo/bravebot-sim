@@ -32,7 +32,8 @@ from bravebot_sim import PhysicsBraveBot, physics_model_path           # noqa: E
 from bravebot_sim.rl.env import BraveBotLocomotionEnv                  # noqa: E402
 
 SIM_DT = 0.02            # 20 ms real-time chunk (= one 50 Hz control step / 10 substeps)
-PUSH_S = 0.15            # how long a mouse-shove force is applied
+PUSH_S = 0.22            # how long a mouse-shove force is applied (a few rapid clicks topple it)
+FALL_HOLD = 2.2          # once it tips, let it topple + lie on the ground this long before reset
 
 # A small playground the robot can drive around: gentle bumps, a shallow ramp, pillars.
 OBSTACLES = """
@@ -85,9 +86,10 @@ class Sim:
         self.scene = self._read_obstacles(m, self.bot.data)
         self.lock = threading.Lock()
         self.v = self.w = 0.0
-        self.push = np.zeros(3); self.push_until = 0.0
+        self.push = np.zeros(3); self.push_torque = np.zeros(3); self.push_until = 0.0
         self._pending_mode = None      # mode switch + reset are applied BY the loop
         self._pending_reset = False    # thread only — never mutate MjData off-thread
+        self.fall_t = None             # wall-clock the robot tipped over (None = on its feet)
         self.state = {}
         self._compute()
         self.running = True
@@ -129,14 +131,17 @@ class Sim:
         self.state = {"parts": parts,
                       "base": [round(float(d.qpos[adr]), 4), round(float(d.qpos[adr + 1]), 4)],
                       "yaw": round(yaw, 4), "speed": round(float(st.v), 3),
-                      "pitch": round(float(st.pitch), 3), "upright": not st.fell,
-                      "fell": st.fell, "mode": self.mode}
+                      "pitch": round(float(st.pitch), 3), "height": round(float(st.height), 3),
+                      "upright": not st.fell,
+                      "fell": st.fell, "fallen": self.fall_t is not None, "mode": self.mode}
 
     def _apply_push(self, data):
         if time.time() < self.push_until:
-            data.xfrc_applied[self.torso, :3] = self.push
+            data.xfrc_applied[self.torso, :3] = self.push           # world-frame shove
+            data.xfrc_applied[self.torso, 3:6] = self.push_torque   # + tipping moment (topples ~in place)
         else:
             data.xfrc_applied[self.torso, :3] = 0.0
+            data.xfrc_applied[self.torso, 3:6] = 0.0
 
     def _loop(self):
         nxt = time.time()
@@ -146,26 +151,48 @@ class Sim:
                 pend_mode, self._pending_mode = self._pending_mode, None
                 pend_reset, self._pending_reset = self._pending_reset, False
             if pend_mode:                 # all MjData mutation happens on this thread
-                self._do_set_mode(pend_mode)
+                self._do_set_mode(pend_mode); self.fall_t = None
             if pend_reset:
-                self._recover()
-            mode = self.mode
-            if mode == "balance":
+                self._recover(); self.fall_t = None
+            if self.fall_t is not None:
+                # FALLEN: control is cut — let it topple + settle on the ground, and
+                # only AFTER a beat (so you actually watch it hit the floor) reset.
+                self._coast()
+                if time.time() - self.fall_t >= FALL_HOLD:
+                    self._recover(); self.fall_t = None
+            elif self.mode == "balance":
                 self._apply_push(self.bot.data)
                 self.bot.drive(v, w); self.bot.step(SIM_DT)
-                fell = self.bot.fell
+                if self.bot.fell: self._begin_fall()
             else:
                 self._apply_push(self.env.data)
                 self.env._cmd[:] = [v, 0.0, w]
                 a = self.policy.predict(self.obs, deterministic=True)[0]
                 self.obs, _, term, _, _ = self.env.step(a)
-                fell = term
-            if fell:
-                self._recover()
+                if term: self._begin_fall()
             with self.lock:
                 self._compute()
             nxt += SIM_DT
             time.sleep(max(0.0, nxt - time.time()))
+
+    def _begin_fall(self):
+        self.fall_t = time.time()
+        with self.lock:
+            self.v = self.w = 0.0
+
+    def _coast(self):
+        """Step physics with the BALANCING cut (wheels + waist drive off) but the legs
+        holding their last posture, so the robot topples as a unit and the chassis hits
+        the ground — instead of being snapped back upright the instant it tips."""
+        m, d, _ = self._active()
+        for name in ("wheel_L_mot", "wheel_R_mot", "torso_roll_pos"):
+            aid = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_ACTUATOR, name)
+            if aid >= 0:
+                d.ctrl[aid] = 0.0
+        d.xfrc_applied[:] = 0.0
+        n = max(1, int(round(SIM_DT / m.opt.timestep)))
+        for _ in range(n):
+            mujoco.mj_step(m, d)
 
     def _recover(self):
         if self.mode == "balance":
@@ -186,8 +213,13 @@ class Sim:
             ang = float(np.random.uniform(0, 2 * np.pi)); d = np.array([np.cos(ang), np.sin(ang), 0.0])
         else:
             d /= n
+        mag = float(np.clip(mag, 0, 250))
         with self.lock:
-            self.push = d * float(np.clip(mag, 0, 250)); self.push_until = time.time() + PUSH_S
+            self.push = d * mag
+            # tip it over roughly in place: a moment about the horizontal axis ⟂ to the
+            # shove direction, so it topples rather than scooting metres across the floor
+            self.push_torque = np.array([d[1], -d[0], 0.0]) * (1.1 * mag)
+            self.push_until = time.time() + PUSH_S
 
     def set_mode(self, mode):
         if mode not in ("balance", "rl"):

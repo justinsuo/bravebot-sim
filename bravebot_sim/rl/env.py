@@ -220,15 +220,16 @@ class BraveBotLocomotionEnv(gym.Env):
         r_vy = 0.6 * math.exp(-8.0 * (vel[1] - vy_cmd) ** 2)
         r_yaw = 1.0 * math.exp(-5.0 * (gyro[2] - yaw_cmd) ** 2)
         # (B) upright via projected gravity, (C) base height, (D) alive
-        r_orient = 0.9 * math.exp(-12.0 * (pg[0] ** 2 + pg[1] ** 2))
-        r_height = 0.3 * math.exp(-60.0 * (height - self._stance_h) ** 2)
+        # stronger + sharper upright reward -> the torso stands visibly straighter
+        r_orient = 1.1 * math.exp(-16.0 * (pg[0] ** 2 + pg[1] ** 2))
+        r_height = 0.4 * math.exp(-60.0 * (height - self._stance_h) ** 2)
         r_alive = 0.6
         # (I) lateral-lean shaping so vy is attempted via the legs (wheels can't strafe)
         lean = float(leg_q[ABAD_IDX[0]] + leg_q[ABAD_IDX[1]])
         lean_des = float(np.clip(vy_cmd / 0.3, -1, 1)) * 0.4
         r_lean = 0.2 * math.exp(-15.0 * (lean - lean_des) ** 2)
         # --- small penalty regularizers (kept << positive shaping) ---
-        p_arate = -0.008 * float(np.sum((action - self._prev_action) ** 2))   # smoothness
+        p_arate = -0.020 * float(np.sum((action - self._prev_action) ** 2))   # smoothness (smoother motion)
         p_energy = -0.0003 * float(np.sum(action ** 2))                        # effort
         # posture: ab/ad range is capped to a moderate splay (natural-looking,
         # roll-stable) so only a light splay penalty; keep the TORSO ~upright so
@@ -236,7 +237,7 @@ class BraveBotLocomotionEnv(gym.Env):
         # left free (it saturated and the base velocity blew up).
         p_pose = (-0.05 * float(np.sum(leg_dev[PITCHKNEE_IDX] ** 2))
                   - 0.03 * float(np.sum(leg_q[ABAD_IDX] ** 2)))
-        p_waist = -0.8 * float(self.data.qpos[self._waist_qadr]) ** 2   # strong: torso upright
+        p_waist = -1.1 * float(self.data.qpos[self._waist_qadr]) ** 2   # stronger: torso stands straight
         over_hi = np.clip(leg_q - (LEG_UPPER - 0.1), 0, None)
         over_lo = np.clip((LEG_LOWER + 0.1) - leg_q, 0, None)
         p_limit = -1.0 * float(np.sum(over_hi ** 2 + over_lo ** 2))            # limit barrier

@@ -155,7 +155,7 @@ function poll(){
       m.position.set(...p.pos); m.quaternion.set(p.quat[1],p.quat[2],p.quat[3],p.quat[0]); }
     lastYaw=s.yaw; lastPitch=s.pitch; mode=s.mode;
     const st=document.getElementById('status');
-    st.textContent = s.upright ? 'balancing ✓' : 'recovering…';
+    st.textContent = s.fallen ? 'fallen — resetting…' : (s.upright ? 'balancing ✓' : 'tipping…');
     st.className = s.upright ? 'ok' : 'warn';
     const cm=document.getElementById('ctrlmode');
     cm.textContent = (mode==='rl') ? 'RL policy' : 'balance'; cm.className = (mode==='rl')?'rl':'';
@@ -170,9 +170,10 @@ function startStream(){ setInterval(poll, 1000/60); }
 let fpv=false; const tmp=new THREE.Vector3(), head=new THREE.Vector3();
 function follow(){
   if(!baseMesh) return;
-  baseMesh.getWorldPosition(tmp); tmp.y = 0.55;
-  const delta = tmp.clone().sub(controls.target);
-  controls.target.add(delta.multiplyScalar(0.12));
+  baseMesh.getWorldPosition(tmp); tmp.y = Math.max(0.25, tmp.y);   // track real height so a fallen robot stays framed
+  const k = tmp.distanceTo(controls.target) > 2.5 ? 0.5 : 0.12;    // hard catch-up if it ran away (shove/fall), so we never lose it
+  const delta = tmp.clone().sub(controls.target).multiplyScalar(k);
+  controls.target.add(delta);
   camera.position.add(delta);
 }
 function driveCam(){       // sit at the robot's "head", look along its heading
@@ -234,8 +235,8 @@ renderer.domElement.addEventListener('pointerup',e=>{
   if(!ray.intersectObjects(robotMeshes,false).length) return;   // only shove if we hit the robot
   const dir=ray.ray.direction;                                  // three Y-up → MuJoCo Z-up (drop vertical)
   let fx=dir.x, fy=-dir.z; const n=Math.hypot(fx,fy)||1; fx/=n; fy/=n;
-  fetch('/push',{method:'POST',body:JSON.stringify({fx,fy,mag:150})}).catch(()=>{});
-  toast('shove! 150 N');
+  fetch('/push',{method:'POST',body:JSON.stringify({fx,fy,mag:250})}).catch(()=>{});
+  toast('shove! 250 N · keep clicking to knock it over');
 });
 
 addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
