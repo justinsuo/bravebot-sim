@@ -31,6 +31,19 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- polish: added a branded SVG favicon (wheel-legged-robot mark, web/favicon.svg) linked
+  from both pages. Kills the only remaining console error (the /favicon.ico 404 on every
+  load) and gives the browser tabs a proper icon. Headless re-verify: both pages now load
+  with PAGE ERRORS: none AND FAILED REQUESTS: none (explorer 27/27 parts, sim balancing).
+- fix: web/sim.html was rendering BLANK in the browser. A fill-light line used
+  Object.assign(new THREE.DirectionalLight, {position:...}) — but Object3D.position is a
+  read-only accessor, so the assignment threw a TypeError at top-level module eval and
+  aborted the WHOLE sim script (robot never loaded, polling never started). Predated the
+  feature work, so the live-sim PAGE had never actually rendered; server-side curl tests
+  only covered the physics backend and node --check can't catch a runtime error. Fix: set
+  .position via .set(). Verified in headless Chrome (puppeteer): sim connects + balances,
+  drives over the bump, controller toggles balance<->RL, FPV works, click-to-shove perturbs
+  pitch 6.4->15.6deg and recovers. Lesson: add a browser smoke-test, not just node --check.
 - FEATURE PACK (user: "do all of them"): shipped all 6 offered interface upgrades.
   EXPLORER (web/index.html): (1) per-part MASS in the info card — export_parts.py now reads
   body inertials from bravebot_physics.xml into parts.json (total 36.76 kg); (2) LABELS —
