@@ -99,7 +99,7 @@ const key = new THREE.DirectionalLight('#fff',2.1); key.position.set(4,7,5); key
 key.shadow.mapSize.set(2048,2048); key.shadow.camera.near=0.5; key.shadow.camera.far=40;
 key.shadow.camera.left=-8;key.shadow.camera.right=8;key.shadow.camera.top=8;key.shadow.camera.bottom=-8;
 key.shadow.bias=-0.0004; scene.add(key);
-scene.add(Object.assign(new THREE.DirectionalLight('#86b6ff',0.55),{position:new THREE.Vector3(-5,3,-3)}));
+const fill = new THREE.DirectionalLight('#86b6ff',0.55); fill.position.set(-5,3,-3); scene.add(fill);
 
 const ground = new THREE.Mesh(new THREE.PlaneGeometry(60,60),
   new THREE.MeshStandardMaterial({color:'#0e131c',roughness:1}));
