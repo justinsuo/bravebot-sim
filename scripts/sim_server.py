@@ -31,7 +31,8 @@ sys.path.insert(0, ROOT)
 from bravebot_sim import PhysicsBraveBot, physics_model_path           # noqa: E402
 from bravebot_sim.rl.env import BraveBotLocomotionEnv                  # noqa: E402
 
-SIM_DT = 0.02            # 20 ms real-time chunk (= one 50 Hz control step / 10 substeps)
+SIM_DT = 0.02            # 20 ms physics chunk (= one 50 Hz control step / 10 substeps)
+TIME_SCALE = 0.65        # play it back at 0.65x real-time — a 37 kg robot should read weighty, not frantic
 PUSH_S = 0.22            # how long a mouse-shove force is applied (a few rapid clicks topple it)
 FALL_HOLD = 2.2          # once it tips, let it topple + lie on the ground this long before reset
 
@@ -172,7 +173,7 @@ class Sim:
                 if term: self._begin_fall()
             with self.lock:
                 self._compute()
-            nxt += SIM_DT
+            nxt += SIM_DT / TIME_SCALE          # stretch wall-clock -> slow-motion playback
             time.sleep(max(0.0, nxt - time.time()))
 
     def _begin_fall(self):
@@ -219,7 +220,7 @@ class Sim:
             # tip it over roughly in place: a moment about the horizontal axis ⟂ to the
             # shove direction, so it topples rather than scooting metres across the floor
             self.push_torque = np.array([d[1], -d[0], 0.0]) * (1.1 * mag)
-            self.push_until = time.time() + PUSH_S
+            self.push_until = time.time() + PUSH_S / TIME_SCALE   # same physics-time impulse under slow-mo
 
     def set_mode(self, mode):
         if mode not in ("balance", "rl"):

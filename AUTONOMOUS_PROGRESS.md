@@ -31,6 +31,18 @@ improved policy, refresh the README/gallery with what it looks like now, and pos
 a written summary update of everything that improved.
 
 ## Log
+- polish (user: "physics looks too fast"): verified the sim IS true real-time (drove 0.43 m/s
+  vs 0.45 commanded — no timing bug), so the FAST look was just a small (0.83 m) robot at 1:1
+  speed with a snappy balancer. Judged + applied: play at 0.65x (TIME_SCALE in sim_server, shove
+  impulse scaled to match so it still topples), gentler drive (V/W 0.65/0.6 -> 0.45/0.45), and
+  pose INTERPOLATION in the browser (lerp/slerp each part toward the latest pose at 60fps) so the
+  32 Hz slow-mo stream renders fluid not steppy. Effective drive ~0.28 m/s (was 0.43). Verified
+  headless: loads clean, balances, shove still topples.
+- RL "stand straighter": MEASURED the champion's steady-state posture — it ALREADY stands
+  straight (torso 1.9° off vertical, base pitch 2.2°, knees 1.4°, 0.83 m tall). A warm-started
+  6-env CPU fine-tune (straighter/smoother reward) did NOT beat it on the keep-best eval (best
+  stayed 3457.5; new ckpts 3420-3430, waist actually worse at 6.3°), so NOT promoted — champion
+  kept, working files restored. Lesson: keep-best measures upright+tracking, not posture.
 - polish: added a branded SVG favicon (wheel-legged-robot mark, web/favicon.svg) linked
   from both pages. Kills the only remaining console error (the /favicon.ico 404 on every
   load) and gives the browser tabs a proper icon. Headless re-verify: both pages now load

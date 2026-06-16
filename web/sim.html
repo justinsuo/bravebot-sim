@@ -138,6 +138,8 @@ fetch('parts.json?t='+Date.now()).then(r=>r.json()).then(data=>{
     mesh.castShadow = mesh.receiveShadow = true;
     mesh.position.set(...p.pos);
     mesh.quaternion.set(p.quat[1],p.quat[2],p.quat[3],p.quat[0]);
+    mesh.userData.tpos = mesh.position.clone();     // interpolation targets (smooth the 32 Hz stream)
+    mesh.userData.tquat = mesh.quaternion.clone();
     robot.add(mesh); byId[p.id] = mesh; robotMeshes.push(mesh);
     if(p.id==='base') baseMesh = mesh;
     if(++done===data.parts.length) startStream();
@@ -152,7 +154,7 @@ function poll(){
     fetching=false;
     if(!connected){ connected=true; document.getElementById('conn').style.display='none'; }
     for(const p of s.parts){ const m=byId[p.id]; if(!m) continue;
-      m.position.set(...p.pos); m.quaternion.set(p.quat[1],p.quat[2],p.quat[3],p.quat[0]); }
+      m.userData.tpos.set(...p.pos); m.userData.tquat.set(p.quat[1],p.quat[2],p.quat[3],p.quat[0]); }
     lastYaw=s.yaw; lastPitch=s.pitch; mode=s.mode;
     const st=document.getElementById('status');
     st.textContent = s.fallen ? 'fallen — resetting…' : (s.upright ? 'balancing ✓' : 'tipping…');
@@ -191,7 +193,7 @@ function setFpv(on){
 }
 
 // ---- driving ----
-const V=0.65, W=0.6; const keys={};
+const V=0.45, W=0.45; const keys={};   // gentler, more deliberate driving
 function sendCmd(){
   let v=0,w=0;
   if(keys.f) v+=V; if(keys.b) v-=V; if(keys.l) w+=W; if(keys.r) w-=W;
@@ -241,7 +243,10 @@ renderer.domElement.addEventListener('pointerup',e=>{
 
 addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
   renderer.setSize(innerWidth,innerHeight); });
+const SMOOTH=0.4;                       // per-frame lerp toward the latest physics pose
 (function tick(){ requestAnimationFrame(tick);
+  for(const m of robotMeshes){ if(!m.userData.tpos) continue;
+    m.position.lerp(m.userData.tpos, SMOOTH); m.quaternion.slerp(m.userData.tquat, SMOOTH); }
   if(fpv) driveCam(); else { follow(); controls.update(); }
   renderer.render(scene,camera); })();
 </script>
